@@ -13,7 +13,7 @@ You need to visualize a network and show it to people. The easy solution is to u
 Your audience will applaud your design skills and ask you how you make your figures over drinks that they payed for.
 
 ## Why should I use this?
-This project is aimed at solving the problem of **quickly making beautiful network visualizations**. The philosophy is that d3 completely solved this problem with its force layout API and that this needs to be put to use to the benefit of a broader audience in a simple web application. The goal is to create a **minimal interface** where users can **upload** a network, **style** it nicely and **save** it to their desktop.
+This project is aimed at solving the problem of **quickly making beautiful network plots**. The philosophy is that d3 completely solved this problem with its force layout API and that this needs to be put to use to the benefit of a broader audience in a simple web application. The goal is to create a **minimal interface** where users can **upload** a network, **style** it nicely and **save** it to their desktop.
 
 # Current state
 
