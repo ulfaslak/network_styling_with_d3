@@ -19,6 +19,10 @@ d3.select(canvas)
     .style("height", height + "px").node()
 context.scale(devicePixelRatio, devicePixelRatio)
 
+
+context.scale(2, 2)
+context.translate(-width/4, -height/4)
+
 // Simulation
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) { return computeLinkDistance(d); }))
@@ -36,7 +40,7 @@ var controls = {
   'Link distance': 30,
   'Link width': 1,
   'Link alpha': 0.5,
-  'Node size': 1, 
+  'Node size': 5, 
   'Node stroke size': 1,
   'Node size log scaling': false,
   'Link distance log scaling': false,
@@ -47,26 +51,12 @@ var controls = {
   'Download figure': 'filename'
 };
 
-var download = function() {
-  this.Download = function(){
-    var link = document.createElement('a');
-    link.download = 'network.png';
-    link.href = document.getElementById('canvas').toDataURL()
-    link.click();
-  }
-}
-
 // Control panel
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
 f1.add(controls, 'Dataset', controls['Dataset']).onChange(function(v) { inputtedDataset(v) });
-f1.add(controls, 'Download figure').onFinishChange(function(v){
-    var link = document.createElement('a');
-    link.download = v + '.png';
-    link.href = document.getElementById('canvas').toDataURL()
-    link.click();
-  })
+f1.add(controls, 'Download figure').onFinishChange(function(v){ download(v) })
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -95,6 +85,9 @@ restart();
 function restart() {
   d3.json(dataset, function(error, graph) {
     if (error) throw error;
+
+    max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+    node_scale = 2 / max_node_size
 
     simulation
         .nodes(graph.nodes)
@@ -166,12 +159,12 @@ function drawLink(d) {
 
 function drawNode(d) {
   if (d.size) { 
-    thisnodesize = d.size * controls['Node size'];
+    thisnodesize = d.size * controls['Node size'] * node_scale;
   } else {
-    thisnodesize = controls['Node size'];
+    thisnodesize = controls['Node size'] * node_scale;
   };
   if (controls['Node size log scaling']) {
-    thisnodesize = logscaler(thisnodesize+1) * controls['Node size']
+    thisnodesize = logscaler(thisnodesize+1) * controls['Node size'] * node_scale
   }
   context.moveTo(d.x + thisnodesize, d.y);
   context.arc(d.x, d.y, thisnodesize, 0, 2 * Math.PI);
@@ -185,12 +178,12 @@ logscaler = d3.scaleLog()
 
 function computeNodeRadii(d) {
   if (d.size) {
-    thisnodesize = d.size * controls['Node size'];
+    thisnodesize = d.size * controls['Node size'] * node_scale;
   } else {
-    thisnodesize = controls['Node size'];
+    thisnodesize = controls['Node size'] * node_scale;
   };
   if (controls['Node size log scaling']) {
-    thisnodesize = logscaler(thisnodesize + 1) * controls['Node size'];
+    thisnodesize = logscaler(thisnodesize + 1) * controls['Node size'] * node_scale;
   }
   return thisnodesize + controls['Node stroke size'];
 }
@@ -207,6 +200,12 @@ function computeLinkDistance(d) {
   return thislinkweight
 }
 
+function download(filename){
+    var link = document.createElement('a');
+    link.download = filename + '.png';
+    link.href = document.getElementById('canvas').toDataURL()
+    link.click();
+  }
 
 // Input handling functions
 // ------------------------
@@ -259,6 +258,11 @@ function inputtedNodeStrokeSize(v) {
 }
 
 function inputtedNodeSizeLogScaling(v) {
+  if (controls['Node size log scaling']) {
+    node_scale = 1;
+  } else {
+    node_scale = 2 / max_node_size;
+  }
   if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
     simulation.alpha(1).restart();
