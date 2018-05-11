@@ -20,9 +20,6 @@ d3.select(canvas)
 context.scale(devicePixelRatio, devicePixelRatio)
 
 
-context.scale(2, 2)
-context.translate(-width/4, -height/4)
-
 // Simulation
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) { return computeLinkDistance(d); }))
