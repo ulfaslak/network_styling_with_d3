@@ -18,8 +18,17 @@ collide = false;
 // Canvas
 var canvas = document.querySelector("canvas"),
     context = canvas.getContext("2d"),
-    width = canvas.width,
-    height = canvas.height;
+    width = canvas.width
+    height = canvas.height
+
+// Retina canvas rendering    
+var devicePixelRatio = window.devicePixelRatio || 1
+d3.select(canvas)
+    .attr("width", width * devicePixelRatio)
+    .attr("height", height * devicePixelRatio)
+    .style("width", width + "px")
+    .style("height", height + "px").node()
+context.scale(devicePixelRatio, devicePixelRatio)
 
 // Simulation
 var simulation = d3.forceSimulation()
