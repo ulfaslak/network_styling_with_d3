@@ -37,4 +37,4 @@ with open('network.json', 'w') as fp:
     json.dump(data, fp)
 ```
 
-To run the app, clone the repository, navigate to the project and run `python -m "SimpleHTTPServer" 8000`, the open a browser and go to `localhost:8000`. If you just want to check it out real quick, [it is also live here](http://ulfaslak.com/network_styling_with_d3/index.html).
+To run the app, clone the repository, navigate to the project and run `python -m "SimpleHTTPServer" 8000`, then open a browser and go to `localhost:8000`. If you just want to check it out real quick, [it is also live here](http://ulfaslak.com/network_styling_with_d3/index.html).
