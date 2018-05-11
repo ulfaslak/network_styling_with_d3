@@ -3,17 +3,6 @@
 
 // State variables
 dataset = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json"
-node_scale = 1;
-node_size_logscale = false;
-node_stroke_size = 1;
-node_color = "#16a085";
-node_stroke = "black";
-link_distance = 30;
-link_weight_logscale = false;
-link_width = 1;
-link_stroke = "rgb(189, 195, 199)";
-link_alpha = 0.8;
-collide = false;
 
 // Canvas
 var canvas = document.querySelector("canvas"),
@@ -38,19 +27,66 @@ var simulation = d3.forceSimulation()
     .force("collide", d3.forceCollide(0))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
 
-// Event handlers
-d3.select("input[id=dataset]").on("keyup", inputtedDataset);
-d3.select("input[id=charge]").on("input", inputtedCharge);
-d3.select("input[id=gravity]").on("input", inputtedGravity);
-d3.select("input[id=strength]").on("input", inputtedStrength);
-d3.select("input[id=distance]").on("input", inputtedDistance);
-d3.select("input[id=linkwidth]").on("input", inputtedLinkWidth);
-d3.select("input[id=nodesize]").on("input", inputtedNodeSize);
-d3.select("input[id=nodestrokesize]").on("input", inputtedNodeStrokeSize);
-d3.select("input[id=nodefill]").on("keyup", inputtedNodeFill);
-d3.select("input[id=nodestroke]").on("keyup", inputtedNodeStroke);
-d3.select("input[id=linkstroke]").on("keyup", inputtedLinkStroke);
-d3.select("input[id=linkalpha]").on("input", inputtedLinkAlpha);
+// Control variables
+var controls = {
+  'Dataset': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Charge strength': -30,
+  'Center gravity': 0.1,
+  'Link strength': 0.5,
+  'Link distance': 30,
+  'Link width': 1,
+  'Link alpha': 0.5,
+  'Node size': 1, 
+  'Node stroke size': 1,
+  'Node size log scaling': false,
+  'Link distance log scaling': false,
+  'Collision': false,
+  'Node fill': '#16a085',
+  'Node stroke': '#000000',
+  'Link stroke': '#7c7c7c',
+  'Download figure': 'filename'
+};
+
+var download = function() {
+  this.Download = function(){
+    var link = document.createElement('a');
+    link.download = 'network.png';
+    link.href = document.getElementById('canvas').toDataURL()
+    link.click();
+  }
+}
+
+// Control panel
+var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
+
+var f1 = gui.addFolder('Input/output'); f1.open();
+f1.add(controls, 'Dataset', controls['Dataset']).onChange(function(v) { inputtedDataset(v) });
+f1.add(controls, 'Download figure').onFinishChange(function(v){
+    var link = document.createElement('a');
+    link.download = v + '.png';
+    link.href = document.getElementById('canvas').toDataURL()
+    link.click();
+  })
+
+var f2 = gui.addFolder('Physics'); f2.open();
+f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
+f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) });
+f2.add(controls, 'Link strength', 0, 2).onChange(function(v) { inputtedStrength(v) });
+f2.add(controls, 'Link distance', 0.1, 100).onChange(function(v) { inputtedDistance(v) });
+f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
+
+var f3 = gui.addFolder('Styling'); f3.open();
+f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
+f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
+f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
+f3.add(controls, 'Link width', 0.1, 4).onChange(function(v) { inputtedLinkWidth(v) });
+f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
+f3.add(controls, 'Node size', 0, 10).onChange(function(v) { inputtedNodeSize(v) });
+f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
+f3.add(controls, 'Node size log scaling', false).onChange(function(v) { inputtedNodeSizeLogScaling(v) });
+f3.add(controls, 'Link distance log scaling', false).onChange(function(v) { inputtedLinkWeightLogScaling(v) });
+
+
 
 // Run simulation
 restart();
@@ -80,18 +116,18 @@ function restart() {
 
       context.beginPath();
       graph.links.forEach(drawLink);
-      context.strokeStyle = link_stroke;
-      context.lineWidth = link_width;
-      context.globalAlpha = link_alpha;
+      context.strokeStyle = controls['Link stroke'];
+      context.lineWidth = controls['Link width'];
+      context.globalAlpha = controls['Link alpha'];
       context.stroke();
 
       context.beginPath();
       graph.nodes.forEach(drawNode);
       context.globalAlpha = 1.0
-      context.strokeStyle = node_stroke;
-      context.lineWidth = node_stroke_size;
+      context.strokeStyle = controls['Node stroke'];
+      context.lineWidth = controls['Node stroke size'];
       context.stroke();
-      context.fillStyle = node_color;
+      context.fillStyle = controls['Node fill'];
       context.fill();
 
     }
@@ -130,12 +166,12 @@ function drawLink(d) {
 
 function drawNode(d) {
   if (d.size) { 
-    thisnodesize = d.size * node_scale;
+    thisnodesize = d.size * controls['Node size'];
   } else {
-    thisnodesize = node_scale;
+    thisnodesize = controls['Node size'];
   };
-  if (node_size_logscale) {
-    thisnodesize = logscaler(thisnodesize+1) * node_scale
+  if (controls['Node size log scaling']) {
+    thisnodesize = logscaler(thisnodesize+1) * controls['Node size']
   }
   context.moveTo(d.x + thisnodesize, d.y);
   context.arc(d.x, d.y, thisnodesize, 0, 2 * Math.PI);
@@ -149,83 +185,68 @@ logscaler = d3.scaleLog()
 
 function computeNodeRadii(d) {
   if (d.size) {
-    thisnodesize = d.size * node_scale;
+    thisnodesize = d.size * controls['Node size'];
   } else {
-    thisnodesize = node_scale;
+    thisnodesize = controls['Node size'];
   };
-  if (node_size_logscale) {
-    thisnodesize = logscaler(thisnodesize + 1) * node_scale;
+  if (controls['Node size log scaling']) {
+    thisnodesize = logscaler(thisnodesize + 1) * controls['Node size'];
   }
-  return thisnodesize + node_stroke_size;
+  return thisnodesize + controls['Node stroke size'];
 }
 
 function computeLinkDistance(d) {
   if (d.weight) {
-    thislinkweight = 1 / d.weight * link_distance;
+    thislinkweight = 1 / d.weight * controls['Link distance'];
   } else {
-    thislinkweight = link_distance;
+    thislinkweight = controls['Link distance'];
   }
-  if (link_weight_logscale) {
-    thislinkweight = logscaler(thislinkweight + 1) * link_distance
+  if (controls['Link distance log scaling']) {
+    thislinkweight = logscaler(thislinkweight + 1) * controls['Link distance']
   }
   return thislinkweight
-}
-
-function download(){
-  var image = document.getElementById("canvas").toDataURL("image/png").replace("image/png", "image/octet-stream");
-  document.getElementById("download").setAttribute("href", image);
 }
 
 
 // Input handling functions
 // ------------------------
 
-function inputtedDataset() {
-  dataset = this.value;
+function inputtedDataset(v) {
   restart();
   simulation.alpha(1).restart();
 }
 
-function inputtedCharge() {
-  simulation.force("charge").strength(+this.value);
+function inputtedCharge(v) {
+  simulation.force("charge").strength(+v);
   simulation.alpha(1).restart();
 }
 
-function inputtedGravity() {
-  simulation.force("x").strength(+this.value);
-  simulation.force("y").strength(+this.value);
+function inputtedGravity(v) {
+  simulation.force("x").strength(+v);
+  simulation.force("y").strength(+v);
   simulation.alpha(1).restart();
 }
 
-function inputtedStrength() {
-  simulation.force("link").strength(+this.value);
+function inputtedStrength(v) {
+  simulation.force("link").strength(+v);
   simulation.alpha(1).restart();
 }
 
-function inputtedDistance() {
-  link_distance = +this.value;
+function inputtedDistance(v) {
   simulation.force("link").distance(function(d) { return computeLinkDistance(d); });
   simulation.alpha(1).restart();
 }
 
-function inputtedLinkWidth() {
-  link_width = +this.value;
+function inputtedLinkWidth(v) {
   simulation.restart();
 }
 
-function inputtedLinkStroke() {
-  link_stroke = this.value;
+function inputtedLinkAlpha(v) {
   simulation.restart();
 }
 
-function inputtedLinkAlpha() {
-  link_alpha = this.value
-  simulation.restart();
-}
-
-function inputtedNodeSize() {
-  node_scale = +this.value;
-  if (collide) {
+function inputtedNodeSize(v) {
+  if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
     simulation.alpha(1).restart();
   } else {
@@ -233,9 +254,12 @@ function inputtedNodeSize() {
   }
 }
 
-function inputtedNodeSizeLogScaling() {
-  node_size_logscale = !node_size_logscale
-  if (collide) {
+function inputtedNodeStrokeSize(v) {
+  simulation.restart();
+}
+
+function inputtedNodeSizeLogScaling(v) {
+  if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
     simulation.alpha(1).restart();
   } else {
@@ -243,29 +267,24 @@ function inputtedNodeSizeLogScaling() {
   }
 }
 
-function inputtedLinkWeightLogScaling() {
-  link_weight_logscale = !link_weight_logscale
+function inputtedLinkWeightLogScaling(v) {
   simulation.force("link").distance(function(d) { return computeLinkDistance(d); });
   simulation.alpha(1).restart();
 }
 
-function inputtedNodeStrokeSize() {
-  node_stroke_size = +this.value;
-  simulation.restart();
-}
-
-function inputtedCollision() {
-  collide = !collide
-  simulation.force("collide").radius(function(d) { return collide * computeNodeRadii(d) });
+function inputtedCollision(v) {
+  simulation.force("collide").radius(function(d) { return controls['Collision'] * computeNodeRadii(d) });
   simulation.alpha(1).restart();
 }
 
-function inputtedNodeFill() {
-  node_color = this.value
+function inputtedNodeFill(v) {
   simulation.restart();
 }
 
-function inputtedNodeStroke() {
-  node_stroke = this.value
+function inputtedNodeStroke(v) {
+  simulation.restart();
+}
+
+function inputtedLinkStroke(v) {
   simulation.restart();
 }
