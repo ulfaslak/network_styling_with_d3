@@ -22,6 +22,7 @@ In it's current state the app allows users to:
 2. Alter the force layout parameters and other styling parameters
 3. Download the network
 
+### Usage
 Networks must be formatted as JSON ([example](https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json)). If hosted online, data must be accessible via a CORS enabled link (see [this](https://beta.observablehq.com/@mbostock/introduction-to-data)). Nodes and links with attributes 'size' and 'weight', respectively, will be scaled accordingly – nodes size increases with 'size' and link distance shortens with 'weigh'. Here's an example piece of Python code that takes a `networkx.Graph` object `G` and saves it in a valid file format:
 
 ```Python
