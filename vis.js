@@ -31,6 +31,7 @@ var simulation = d3.forceSimulation()
 // Control variables
 var controls = {
   'Dataset': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Download figure': 'filename',
   'Charge strength': -30,
   'Center gravity': 0.1,
   'Link strength': 0.5,
@@ -45,15 +46,18 @@ var controls = {
   'Node fill': '#16a085',
   'Node stroke': '#000000',
   'Link stroke': '#7c7c7c',
-  'Download figure': 'filename'
+  'Zoom': 1
 };
+
+// Global zoom
+zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
 
 // Control panel
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
 f1.add(controls, 'Dataset', controls['Dataset']).onChange(function(v) { inputtedDataset(v) });
-f1.add(controls, 'Download figure').onFinishChange(function(v){ download(v) })
+f1.add(controls, 'Download figure').onFinishChange(function(v){ inputtedDownload(v) })
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -72,6 +76,7 @@ f3.add(controls, 'Node size', 0, 10).onChange(function(v) { inputtedNodeSize(v) 
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
 f3.add(controls, 'Node size log scaling', false).onChange(function(v) { inputtedNodeSizeLogScaling(v) });
 f3.add(controls, 'Link distance log scaling', false).onChange(function(v) { inputtedLinkWeightLogScaling(v) });
+f3.add(controls, 'Zoom', 0.7, 3).onChange(function(v) { inputtedZoom(v) });
 
 
 
@@ -106,8 +111,8 @@ function restart() {
 
       context.beginPath();
       graph.links.forEach(drawLink);
-      context.strokeStyle = controls['Link stroke'];
-      context.lineWidth = controls['Link width'];
+      context.strokeStyle = controls['Link stroke'] * controls['Zoom'];
+      context.lineWidth = controls['Link width'] * controls['Zoom'];
       context.globalAlpha = controls['Link alpha'];
       context.stroke();
 
@@ -115,7 +120,7 @@ function restart() {
       graph.nodes.forEach(drawNode);
       context.globalAlpha = 1.0
       context.strokeStyle = controls['Node stroke'];
-      context.lineWidth = controls['Node stroke size'];
+      context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
       context.stroke();
       context.fillStyle = controls['Node fill'];
       context.fill();
@@ -123,7 +128,7 @@ function restart() {
     }
 
     function dragsubject() {
-      return simulation.find(d3.event.x, d3.event.y);
+      return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y));
     }
   }); 
 }
@@ -138,9 +143,10 @@ function dragstarted() {
   d3.event.subject.fy = d3.event.subject.y;
 }
 
+
 function dragged() {
-  d3.event.subject.fx = d3.event.x;
-  d3.event.subject.fy = d3.event.y;
+  d3.event.subject.fx = zoom_scaler.invert(event.clientX);
+  d3.event.subject.fy = zoom_scaler.invert(event.clientY);
 }
 
 function dragended() {
@@ -150,8 +156,8 @@ function dragended() {
 }
 
 function drawLink(d) {
-  context.moveTo(d.source.x, d.source.y);
-  context.lineTo(d.target.x, d.target.y);
+  context.moveTo(zoom_scaler(d.source.x), zoom_scaler(d.source.y));
+  context.lineTo(zoom_scaler(d.target.x), zoom_scaler(d.target.y));
 }
 
 function drawNode(d) {
@@ -163,8 +169,8 @@ function drawNode(d) {
   if (controls['Node size log scaling']) {
     thisnodesize = logscaler(thisnodesize+1) * controls['Node size'] * node_scale
   }
-  context.moveTo(d.x + thisnodesize, d.y);
-  context.arc(d.x, d.y, thisnodesize, 0, 2 * Math.PI);
+  context.moveTo(zoom_scaler(d.x) + thisnodesize * controls['Zoom'], zoom_scaler(d.y));
+  context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * controls['Zoom'], 0, 2 * Math.PI);
 }
 
 
@@ -197,19 +203,20 @@ function computeLinkDistance(d) {
   return thislinkweight
 }
 
-function download(filename){
-    var link = document.createElement('a');
-    link.download = filename + '.png';
-    link.href = document.getElementById('canvas').toDataURL()
-    link.click();
-  }
-
 // Input handling functions
 // ------------------------
 
+// Physics
 function inputtedDataset(v) {
   restart();
   simulation.alpha(1).restart();
+}
+
+function inputtedDownload(filename){
+  var link = document.createElement('a');
+  link.download = filename + '.png';
+  link.href = document.getElementById('canvas').toDataURL()
+  link.click();
 }
 
 function inputtedCharge(v) {
@@ -231,6 +238,25 @@ function inputtedStrength(v) {
 function inputtedDistance(v) {
   simulation.force("link").distance(function(d) { return computeLinkDistance(d); });
   simulation.alpha(1).restart();
+}
+
+function inputtedCollision(v) {
+  simulation.force("collide").radius(function(d) { return controls['Collision'] * computeNodeRadii(d) });
+  simulation.alpha(1).restart();
+}
+
+
+// Styling
+function inputtedNodeFill(v) {
+  simulation.restart();
+}
+
+function inputtedNodeStroke(v) {
+  simulation.restart();
+}
+
+function inputtedLinkStroke(v) {
+  simulation.restart();
 }
 
 function inputtedLinkWidth(v) {
@@ -273,19 +299,10 @@ function inputtedLinkWeightLogScaling(v) {
   simulation.alpha(1).restart();
 }
 
-function inputtedCollision(v) {
-  simulation.force("collide").radius(function(d) { return controls['Collision'] * computeNodeRadii(d) });
-  simulation.alpha(1).restart();
-}
-
-function inputtedNodeFill(v) {
+function inputtedZoom(v) {
+  zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
   simulation.restart();
 }
 
-function inputtedNodeStroke(v) {
-  simulation.restart();
-}
 
-function inputtedLinkStroke(v) {
-  simulation.restart();
-}
+
