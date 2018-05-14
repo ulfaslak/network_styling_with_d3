@@ -166,7 +166,7 @@ function drawNode(d) {
   if (controls['Node size log scaling']) {
     thisnodesize = logscaler(thisnodesize+1) * controls['Node size'] * node_scale
   }
-  context.moveTo(zoom_scaler(d.x), zoom_scaler(d.y));
+  context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
   context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
 }
 
