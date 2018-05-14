@@ -39,7 +39,7 @@ var controls = {
   'Link width': 1,
   'Link alpha': 0.5,
   'Node size': 5, 
-  'Node stroke size': 1,
+  'Node stroke size': 0.1,
   'Node size log scaling': false,
   'Link distance log scaling': false,
   'Collision': false,
@@ -48,9 +48,6 @@ var controls = {
   'Link stroke': '#7c7c7c',
   'Zoom': 1
 };
-
-// Global zoom
-zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
 
 // Control panel
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
@@ -111,8 +108,8 @@ function restart() {
 
       context.beginPath();
       graph.links.forEach(drawLink);
-      context.strokeStyle = controls['Link stroke'] * controls['Zoom'];
-      context.lineWidth = controls['Link width'] * controls['Zoom'];
+      context.strokeStyle = controls['Link stroke'];
+      context.lineWidth = controls['Link width'] * (controls['Zoom'] + (controls['Zoom'] - 1));
       context.globalAlpha = controls['Link alpha'];
       context.stroke();
 
@@ -169,8 +166,8 @@ function drawNode(d) {
   if (controls['Node size log scaling']) {
     thisnodesize = logscaler(thisnodesize+1) * controls['Node size'] * node_scale
   }
-  context.moveTo(zoom_scaler(d.x) + thisnodesize * controls['Zoom'], zoom_scaler(d.y));
-  context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * controls['Zoom'], 0, 2 * Math.PI);
+  context.moveTo(zoom_scaler(d.x), zoom_scaler(d.y));
+  context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
 }
 
 
@@ -178,6 +175,7 @@ function drawNode(d) {
 // -----------------
 
 logscaler = d3.scaleLog()
+zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
 
 function computeNodeRadii(d) {
   if (d.size) {
@@ -188,7 +186,7 @@ function computeNodeRadii(d) {
   if (controls['Node size log scaling']) {
     thisnodesize = logscaler(thisnodesize + 1) * controls['Node size'] * node_scale;
   }
-  return thisnodesize + controls['Node stroke size'];
+  return thisnodesize;
 }
 
 function computeLinkDistance(d) {
