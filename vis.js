@@ -58,7 +58,7 @@ var controls = {
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
-f1.add(controls, 'Dataset', controls['Dataset']).onChange(function(v) { inputtedDataset(v) });
+f1.add(controls, 'Dataset', controls['Dataset']).onFinishChange(function(v) { inputtedDataset(v) });
 f1.add(controls, 'Download figure');
 
 var f2 = gui.addFolder('Physics'); f2.open();
@@ -80,16 +80,12 @@ f3.add(controls, 'Node scaling root', -1., 1.).onChange(function(v) { inputtedNo
 f3.add(controls, 'Link scaling root', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
 f3.add(controls, 'Zoom', 0.7, 3).onChange(function(v) { inputtedZoom(v) });
 
-
-// Run simulation
-restart();
-
 // Restart simulation. Only used when reloading data
 function restart() {
   d3.json(controls['Dataset'], function(error, graph) {
     if (error) throw error;
 
-    max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+    max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
     min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
     if (controls['Node scaling root'] > 0) {
       node_size_norm = 1 / max_node_size**(controls['Node scaling root'])
@@ -130,14 +126,17 @@ function restart() {
       context.stroke();
       context.fillStyle = controls['Node fill'];
       context.fill();
-
     }
+
+    simulation.alpha(1).restart();
 
     function dragsubject() {
       return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y));
     }
   }); 
 }
+
+inputtedDataset(controls['Dataset'])
 
 
 // Network functions
@@ -204,12 +203,12 @@ function computeLinkDistance(d) {
 // Input handling functions
 // ------------------------
 
-// Physics
+// Input
 function inputtedDataset(v) {
-  restart();
-  simulation.alpha(1).restart();
+  validate(v, restart)
 }
 
+// Physics
 function inputtedCharge(v) {
   simulation.force("charge").strength(+v);
   simulation.alpha(1).restart();
@@ -294,6 +293,84 @@ function inputtedZoom(v) {
   zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
   simulation.restart();
 }
+
+// Boring functions and eventlisteners
+// ----------------
+
+function validate(filename, callback) {
+  d3.json(filename, function(error, graph) {
+    if (error) {
+      window.alert("Error: Dataset not found")
+      return false
+    }
+
+    // Check for 'nodes' and 'links' lists
+    var missing_attributes = []
+    if (!graph.nodes) {
+      missing_attributes.push("'nodes'")
+    }
+    if (!graph.links) {
+      missing_attributes.push("'links'")
+    }
+    if (missing_attributes.length == 1) {
+      window.alert("Error: Dataset does not have a key for " + missing_attributes[0])
+      return false
+    }
+    if (missing_attributes.length == 2) {
+      window.alert("Error: Dataset does not have keys for " + missing_attributes.join(" and "))
+      return false
+    }
+
+    // Check that 'links' and 'nodes' data are congruent
+    var nodes_nodes = graph.nodes.map(d => {return d.id});
+    var nodes_nodes_set = new Set(nodes_nodes)
+    window.links_nodes_set = tmp = new Set()
+    graph.links.forEach(l => {
+      links_nodes_set.add(l.source); links_nodes_set.add(l.source.id)  // Either l.source or l.source.id will be null
+      links_nodes_set.add(l.target); links_nodes_set.add(l.target.id)  // so just add both and remove null later (same for target)
+    }); links_nodes_set.delete(undefined)
+
+    if (nodes_nodes_set.size == 0) {
+      alert("Error: No nodes found. Format nodes like {'id': <idnum>, 'size': <nodesize>} ('size' optional).")
+    }
+    if (nodes_nodes.includes(null)) {
+      window.alert("Error: Found items in node list without 'id' key. Format nodes like {'id': <idnum>, 'size': <nodesize>} ('size' optional).");
+      return false;
+    }
+    if (nodes_nodes.length != nodes_nodes_set.size) {
+      window.alert("Error: Found multiple nodes with the same id.");
+      return false;
+    }
+    if (nodes_nodes_set.size < links_nodes_set.size) {
+      window.alert("Error: Found nodes referenced in 'links' which are not in 'nodes'.");
+      return false;
+    }
+
+    // Check the node and link attributes
+    var foreign_nodes_attributes = new Set()
+    graph.nodes.forEach(d => {
+      d3.keys(d).forEach(k => {
+        if (!['id', 'size'].includes(k)) foreign_nodes_attributes.add(k)
+      })
+    })
+    var foreign_links_attributes = new Set()
+    graph.links.forEach(d => {
+      d3.keys(d).forEach(k => {
+        if (!['source', 'target', 'weight'].includes(k)) foreign_links_attributes.add(k)
+      })
+    })
+    if (foreign_nodes_attributes.size > 0) {
+      window.alert("Warning: Found unexpected node attribute(s) " + Array.from(foreign_nodes_attributes).join(", "))
+    }
+    if (foreign_links_attributes.size > 0) {
+      window.alert("Warning: Found unexpected link attribute(s) " + Array.from(foreign_links_attributes).join(", "))
+    }
+
+    // Run the restart if all of this was OK
+    callback();
+  })
+}
+
 
 
 
