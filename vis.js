@@ -16,7 +16,6 @@ d3.select(canvas)
     .style("height", height + "px").node()
 context.scale(devicePixelRatio, devicePixelRatio)
 
-
 // Simulation
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) { return computeLinkDistance(d); }))
@@ -25,20 +24,28 @@ var simulation = d3.forceSimulation()
     .force("collide", d3.forceCollide(0))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
 
+// Download figure function (must be defined before control variables)
+var download = function() {
+  var link = document.createElement('a');
+  link.download = 'network.png';
+  link.href = document.getElementById('canvas').toDataURL()
+  link.click();
+}
+
 // Control variables
 var controls = {
   'Dataset': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
-  'Download figure': 'filename',
+  'Download figure': download,
   'Charge strength': -30,
   'Center gravity': 0.1,
   'Link strength': 0.5,
   'Link distance': 30,
   'Link width': 1,
   'Link alpha': 0.5,
-  'Node size': 5, 
+  'Node size': 10, 
   'Node stroke size': 0.1,
-  'Node size log scaling': false,
-  'Link distance log scaling': false,
+  'Node scaling root': 0.5,
+  'Link scaling root': 1,
   'Collision': false,
   'Node fill': '#16a085',
   'Node stroke': '#000000',
@@ -46,12 +53,13 @@ var controls = {
   'Zoom': 1
 };
 
+
 // Control panel
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
 f1.add(controls, 'Dataset', controls['Dataset']).onChange(function(v) { inputtedDataset(v) });
-f1.add(controls, 'Download figure').onFinishChange(function(v){ inputtedDownload(v) })
+f1.add(controls, 'Download figure');
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -66,12 +74,11 @@ f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(
 f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
 f3.add(controls, 'Link width', 0.1, 4).onChange(function(v) { inputtedLinkWidth(v) });
 f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
-f3.add(controls, 'Node size', 0, 10).onChange(function(v) { inputtedNodeSize(v) });
+f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
-f3.add(controls, 'Node size log scaling', false).onChange(function(v) { inputtedNodeSizeLogScaling(v) });
-f3.add(controls, 'Link distance log scaling', false).onChange(function(v) { inputtedLinkWeightLogScaling(v) });
+f3.add(controls, 'Node scaling root', -1., 1.).onChange(function(v) { inputtedNodeScalingRoot(v) });
+f3.add(controls, 'Link scaling root', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
 f3.add(controls, 'Zoom', 0.7, 3).onChange(function(v) { inputtedZoom(v) });
-
 
 
 // Run simulation
@@ -83,7 +90,12 @@ function restart() {
     if (error) throw error;
 
     max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
-    node_scale = 2 / max_node_size
+    min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+    if (controls['Node scaling root'] > 0) {
+      node_size_norm = 1 / max_node_size**(controls['Node scaling root'])
+    } else {
+      node_size_norm = 1 / min_node_size**(controls['Node scaling root'])
+    }
 
     simulation
         .nodes(graph.nodes)
@@ -156,13 +168,10 @@ function drawLink(d) {
 
 function drawNode(d) {
   if (d.size) { 
-    thisnodesize = d.size * controls['Node size'] * node_scale;
+    thisnodesize = (d.size)**(controls['Node scaling root']) * node_size_norm * controls['Node size'];
   } else {
-    thisnodesize = controls['Node size'] * node_scale;
+    thisnodesize = 1 * node_size_norm * controls['Node size'];
   };
-  if (controls['Node size log scaling']) {
-    thisnodesize = logscaler(thisnodesize+1) * controls['Node size'] * node_scale
-  }
   context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
   context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
 }
@@ -176,24 +185,18 @@ zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['
 
 function computeNodeRadii(d) {
   if (d.size) {
-    thisnodesize = d.size * controls['Node size'] * node_scale;
+    thisnodesize = (d.size)**(controls['Node scaling root']) * node_size_norm * controls['Node size'];
   } else {
-    thisnodesize = controls['Node size'] * node_scale;
+    thisnodesize = 1 * node_size_norm * controls['Node size'];
   };
-  if (controls['Node size log scaling']) {
-    thisnodesize = logscaler(thisnodesize + 1) * controls['Node size'] * node_scale;
-  }
   return thisnodesize;
 }
 
 function computeLinkDistance(d) {
   if (d.weight) {
-    thislinkweight = 1 / d.weight * controls['Link distance'];
+    thislinkweight = 1 / d.weight**(controls['Link scaling root']) * controls['Link distance'];
   } else {
     thislinkweight = controls['Link distance'];
-  }
-  if (controls['Link distance log scaling']) {
-    thislinkweight = logscaler(thislinkweight + 1) * controls['Link distance']
   }
   return thislinkweight
 }
@@ -205,13 +208,6 @@ function computeLinkDistance(d) {
 function inputtedDataset(v) {
   restart();
   simulation.alpha(1).restart();
-}
-
-function inputtedDownload(filename){
-  var link = document.createElement('a');
-  link.download = filename + '.png';
-  link.href = document.getElementById('canvas').toDataURL()
-  link.click();
 }
 
 function inputtedCharge(v) {
@@ -275,11 +271,11 @@ function inputtedNodeStrokeSize(v) {
   simulation.restart();
 }
 
-function inputtedNodeSizeLogScaling(v) {
-  if (controls['Node size log scaling']) {
-    node_scale = 1;
+function inputtedNodeScalingRoot(v) {
+  if (controls['Node scaling root'] > 0) {
+    node_size_norm = 1 / max_node_size**(controls['Node scaling root'])
   } else {
-    node_scale = 2 / max_node_size;
+    node_size_norm = 1 / min_node_size**(controls['Node scaling root'])
   }
   if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
@@ -289,7 +285,7 @@ function inputtedNodeSizeLogScaling(v) {
   }
 }
 
-function inputtedLinkWeightLogScaling(v) {
+function inputtedLinkScalingRoot(v) {
   simulation.force("link").distance(function(d) { return computeLinkDistance(d); });
   simulation.alpha(1).restart();
 }
