@@ -1,9 +1,6 @@
 // Based on simple canvas network visualization by Mike Bostock
 // source: https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
 
-// State variables
-dataset = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json"
-
 // Canvas
 var canvas = document.querySelector("canvas"),
     context = canvas.getContext("2d"),
@@ -82,7 +79,7 @@ restart();
 
 // Restart simulation. Only used when reloading data
 function restart() {
-  d3.json(dataset, function(error, graph) {
+  d3.json(controls['Dataset'], function(error, graph) {
     if (error) throw error;
 
     max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
