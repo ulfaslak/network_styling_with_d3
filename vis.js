@@ -34,7 +34,7 @@ var download = function() {
 
 // Control variables
 var controls = {
-  'Dataset': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Path to JSON': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
   'Download figure': download,
   'Charge strength': -30,
   'Center gravity': 0.1,
@@ -44,8 +44,8 @@ var controls = {
   'Link alpha': 0.5,
   'Node size': 10, 
   'Node stroke size': 0.1,
-  'Node scaling root': 0.5,
-  'Link scaling root': 1,
+  'Node scaling exponent': 0.5,
+  'Link scaling exponent': 1,
   'Collision': false,
   'Node fill': '#16a085',
   'Node stroke': '#000000',
@@ -58,8 +58,8 @@ var controls = {
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
-f1.add(controls, 'Dataset', controls['Dataset']).onFinishChange(function(v) { inputtedDataset(v) });
-f1.add(controls, 'Download figure');
+f1.add(controls, 'Path to JSON', controls['Path to JSON']).onFinishChange(function(v) { handle_URL_JSON(v) });
+tmp = f1.add(controls, 'Download figure');
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -72,75 +72,73 @@ var f3 = gui.addFolder('Styling'); f3.open();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
 f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
 f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
-f3.add(controls, 'Link width', 0.1, 4).onChange(function(v) { inputtedLinkWidth(v) });
+f3.add(controls, 'Link width', 0.1, 10).onChange(function(v) { inputtedLinkWidth(v) });
 f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
 f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
-f3.add(controls, 'Node scaling root', -1., 1.).onChange(function(v) { inputtedNodeScalingRoot(v) });
-f3.add(controls, 'Link scaling root', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
-f3.add(controls, 'Zoom', 0.7, 3).onChange(function(v) { inputtedZoom(v) });
+f3.add(controls, 'Node scaling exponent', -1., 1.).onChange(function(v) { inputtedNodeScalingRoot(v) });
+f3.add(controls, 'Link scaling exponent', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
+f3.add(controls, 'Zoom', 0.6, 3).onChange(function(v) { inputtedZoom(v) });
+
 
 // Restart simulation. Only used when reloading data
-function restart() {
-  d3.json(controls['Dataset'], function(error, graph) {
-    if (error) throw error;
+function restart(graph) {
+  max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
+  min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+  if (controls['Node scaling exponent'] > 0) {
+    node_size_norm = 1 / max_node_size**(controls['Node scaling exponent'])
+  } else {
+    node_size_norm = 1 / min_node_size**(controls['Node scaling exponent'])
+  }
 
-    max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
-    min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
-    if (controls['Node scaling root'] > 0) {
-      node_size_norm = 1 / max_node_size**(controls['Node scaling root'])
-    } else {
-      node_size_norm = 1 / min_node_size**(controls['Node scaling root'])
-    }
+  simulation
+      .nodes(graph.nodes)
+      .on("tick", ticked);
 
-    simulation
-        .nodes(graph.nodes)
-        .on("tick", ticked);
+  simulation.force("link")
+      .links(graph.links);
 
-    simulation.force("link")
-        .links(graph.links);
+  d3.select(canvas)
+      .call(d3.drag()
+          .container(canvas)
+          .subject(dragsubject)
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended));
 
-    d3.select(canvas)
-        .call(d3.drag()
-            .container(canvas)
-            .subject(dragsubject)
-            .on("start", dragstarted)
-            .on("drag", dragged)
-            .on("end", dragended));
+  function ticked() {
+    context.clearRect(0, 0, width, height);
 
-    function ticked() {
-      context.clearRect(0, 0, width, height);
+    context.beginPath();
+    graph.links.forEach(drawLink);
+    context.strokeStyle = controls['Link stroke'];
+    context.lineWidth = controls['Link width'] * (controls['Zoom'] + (controls['Zoom'] - 1));
+    context.globalAlpha = controls['Link alpha'];
+    context.stroke();
 
-      context.beginPath();
-      graph.links.forEach(drawLink);
-      context.strokeStyle = controls['Link stroke'];
-      context.lineWidth = controls['Link width'] * (controls['Zoom'] + (controls['Zoom'] - 1));
-      context.globalAlpha = controls['Link alpha'];
-      context.stroke();
+    context.beginPath();
+    graph.nodes.forEach(drawNode);
+    context.globalAlpha = 1.0
+    context.strokeStyle = controls['Node stroke'];
+    context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
+    context.stroke();
+    context.fillStyle = controls['Node fill'];
+    context.fill();
+  }
 
-      context.beginPath();
-      graph.nodes.forEach(drawNode);
-      context.globalAlpha = 1.0
-      context.strokeStyle = controls['Node stroke'];
-      context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
-      context.stroke();
-      context.fillStyle = controls['Node fill'];
-      context.fill();
-    }
+  simulation.alpha(1).restart();
 
-    simulation.alpha(1).restart();
-
-    function dragsubject() {
-      return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y));
-    }
-  }); 
 }
 
-inputtedDataset(controls['Dataset'])
+handle_URL_JSON(controls['Path to JSON'])
 
 
 // Network functions
 // -----------------
+
+function dragsubject() {
+  return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y));
+}
 
 function dragstarted() {
   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -167,7 +165,7 @@ function drawLink(d) {
 
 function drawNode(d) {
   if (d.size) { 
-    thisnodesize = (d.size)**(controls['Node scaling root']) * node_size_norm * controls['Node size'];
+    thisnodesize = (d.size)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
   } else {
     thisnodesize = 1 * node_size_norm * controls['Node size'];
   };
@@ -184,7 +182,7 @@ zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['
 
 function computeNodeRadii(d) {
   if (d.size) {
-    thisnodesize = (d.size)**(controls['Node scaling root']) * node_size_norm * controls['Node size'];
+    thisnodesize = (d.size)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
   } else {
     thisnodesize = 1 * node_size_norm * controls['Node size'];
   };
@@ -193,7 +191,7 @@ function computeNodeRadii(d) {
 
 function computeLinkDistance(d) {
   if (d.weight) {
-    thislinkweight = 1 / d.weight**(controls['Link scaling root']) * controls['Link distance'];
+    thislinkweight = 1 / d.weight**(controls['Link scaling exponent']) * controls['Link distance'];
   } else {
     thislinkweight = controls['Link distance'];
   }
@@ -202,11 +200,6 @@ function computeLinkDistance(d) {
 
 // Input handling functions
 // ------------------------
-
-// Input
-function inputtedDataset(v) {
-  validate(v, restart)
-}
 
 // Physics
 function inputtedCharge(v) {
@@ -271,10 +264,10 @@ function inputtedNodeStrokeSize(v) {
 }
 
 function inputtedNodeScalingRoot(v) {
-  if (controls['Node scaling root'] > 0) {
-    node_size_norm = 1 / max_node_size**(controls['Node scaling root'])
+  if (controls['Node scaling exponent'] > 0) {
+    node_size_norm = 1 / max_node_size**(controls['Node scaling exponent'])
   } else {
-    node_size_norm = 1 / min_node_size**(controls['Node scaling root'])
+    node_size_norm = 1 / min_node_size**(controls['Node scaling exponent'])
   }
   if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
@@ -294,55 +287,68 @@ function inputtedZoom(v) {
   simulation.restart();
 }
 
-// Boring functions and eventlisteners
-// ----------------
 
-function validate(filename, callback) {
-  d3.json(filename, function(error, graph) {
+// Handle input data
+// -----------------
+
+function handle_URL_JSON() {
+  d3.json(controls['Path to JSON'], function(error, graph) {
     if (error) {
-      window.alert("Error: Dataset not found")
+      swal({text: "File not found", icon: "error"})
       return false
     }
+    restart_if_valid(graph);
+  })
+}
 
-    // Check for 'nodes' and 'links' lists
-    var missing_attributes = []
-    if (!graph.nodes) {
-      missing_attributes.push("'nodes'")
+
+function restart_if_valid(graph) {
+// Check for 'nodes' and 'links' lists
+    if (!graph.nodes || graph.nodes.length == 0) {
+      swal({text: "Dataset does not have a key 'nodes'", icon: "error"})
+      return false
     }
     if (!graph.links) {
-      missing_attributes.push("'links'")
+      swal({text: "Dataset does not have a key 'links'", icon: "warning"})
     }
-    if (missing_attributes.length == 1) {
-      window.alert("Error: Dataset does not have a key for " + missing_attributes[0])
-      return false
+
+    // Check that node and link objects are formatted right
+    for (d of graph.nodes) {
+      if (!d3.keys(d).includes("id")) {
+        swal({text: "Found objects in 'nodes' without 'id' key.", icon: "error"});
+        return false;
+      }
     }
-    if (missing_attributes.length == 2) {
-      window.alert("Error: Dataset does not have keys for " + missing_attributes.join(" and "))
-      return false
+    for (d of graph.links) {
+      if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
+        swal({text: "Found objects in 'links' without 'source' or 'target' key.", icon: "error"});
+        return false;
+      }
     }
 
     // Check that 'links' and 'nodes' data are congruent
     var nodes_nodes = graph.nodes.map(d => {return d.id});
     var nodes_nodes_set = new Set(nodes_nodes)
-    window.links_nodes_set = tmp = new Set()
+    var links_nodes_set = new Set()
     graph.links.forEach(l => {
       links_nodes_set.add(l.source); links_nodes_set.add(l.source.id)  // Either l.source or l.source.id will be null
       links_nodes_set.add(l.target); links_nodes_set.add(l.target.id)  // so just add both and remove null later (same for target)
     }); links_nodes_set.delete(undefined)
 
     if (nodes_nodes_set.size == 0) {
-      alert("Error: No nodes found. Format nodes like {'id': <idnum>, 'size': <nodesize>} ('size' optional).")
+      swal({text: "No nodes found.", icon: "error"})
+      return false;
     }
     if (nodes_nodes.includes(null)) {
-      window.alert("Error: Found items in node list without 'id' key. Format nodes like {'id': <idnum>, 'size': <nodesize>} ('size' optional).");
+      swal({text: "Found items in node list without 'id' key.", icon: "error"});
       return false;
     }
     if (nodes_nodes.length != nodes_nodes_set.size) {
-      window.alert("Error: Found multiple nodes with the same id.");
+      swal({text: "Found multiple nodes with the same id.", icon: "error"});
       return false;
     }
     if (nodes_nodes_set.size < links_nodes_set.size) {
-      window.alert("Error: Found nodes referenced in 'links' which are not in 'nodes'.");
+      swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
       return false;
     }
 
@@ -360,17 +366,17 @@ function validate(filename, callback) {
       })
     })
     if (foreign_nodes_attributes.size > 0) {
-      window.alert("Warning: Found unexpected node attribute(s) " + Array.from(foreign_nodes_attributes).join(", "))
+      swal({text: "Found unexpected node attribute(s): " + Array.from(foreign_nodes_attributes).join(", "), icon: "warning"})
     }
     if (foreign_links_attributes.size > 0) {
-      window.alert("Warning: Found unexpected link attribute(s) " + Array.from(foreign_links_attributes).join(", "))
+      swal({text: "Found unexpected link attribute(s): " + Array.from(foreign_links_attributes).join(", "), icon: "warning"})
     }
 
     // Run the restart if all of this was OK
-    callback();
-  })
+    restart(graph);
 }
 
 
-
+// Various utilities
+// -----------------
 
