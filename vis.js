@@ -2,10 +2,13 @@
 // source: https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
 
 // Canvas
-var canvas = document.querySelector("canvas"),
-    context = canvas.getContext("2d"),
-    width = canvas.width
-    height = canvas.height
+var canvas = document.querySelector("canvas")
+canvas.width = window.innerWidth * 0.75
+canvas.height = window.innerWidth * 0.75
+
+context = canvas.getContext("2d")
+width = canvas.width
+height = canvas.height
 
 // Retina canvas rendering    
 var devicePixelRatio = window.devicePixelRatio || 1
@@ -85,7 +88,12 @@ var controls = {
 
 
 // Control panel
-var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
+var gui = new dat.GUI({ autoPlace: false});
+gui.width = window.innerWidth * 0.25;
+gui.closed = true;
+var customContainer = document.getElementsByClassName('child_div2_child_child')[0];
+customContainer.appendChild(gui.domElement);
+gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
 f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handle_url(v) });

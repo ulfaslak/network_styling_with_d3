@@ -1,0 +1,35 @@
+.parent_div {
+	width: 100vw;
+	height: 75vw;
+}
+
+.child_div1 {
+	width: 75vw;
+	height: 75vw;
+	float: left;
+}
+
+.child_div2 {
+	width: 25vw;
+	max-height: 75vw;
+	float: right;
+	overflow-y: scroll;
+}
+
+.child_div2_child1 {
+	width: 25vw;
+	position: relative;
+}
+
+.child_div2_child_mid {
+	width: 25vw;
+	height: 30px;
+}
+
+.child_div2_child2 {
+	width: 25vw;
+}
+
+p.sidebar-text {
+    color: grey;
+}
