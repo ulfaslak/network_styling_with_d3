@@ -32,9 +32,39 @@ var download = function() {
   link.click();
 }
 
+// Upload dataset button
+function upload_event() {
+  var fileInput = document.getElementById('upload');
+  fileInput.addEventListener("change", function() {
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    
+    if (file.name.endsWith(".json")) {
+      reader.onload = function(e) {
+        var graph = JSON.parse(reader.result);
+        restart_if_valid_JSON(graph);
+      }
+    } else if (file.name.endsWith(".csv")) {
+      reader.onload = function(e) {
+        restart_if_valid_CSV(reader.result)
+      }
+    } else {
+      swal({text: "File not supported", icon: "error"})
+      return false
+    }
+    reader.readAsText(file);
+  });
+}
+
+var upload_file = function() {
+  var uploader = document.getElementById('upload');
+  uploader.click()
+}
+
 // Control variables
 var controls = {
-  'Path to JSON': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Path to file (csv or json)': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Upload file (csv or json)': upload_file,
   'Download figure': download,
   'Charge strength': -30,
   'Center gravity': 0.1,
@@ -58,8 +88,9 @@ var controls = {
 var gui = new dat.GUI(); gui.width = 400; gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
-f1.add(controls, 'Path to JSON', controls['Path to JSON']).onFinishChange(function(v) { handle_URL_JSON(v) });
-tmp = f1.add(controls, 'Download figure');
+f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handle_url(v) });
+f1.add(controls, 'Upload file (csv or json)')
+f1.add(controls, 'Download figure');
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -83,6 +114,7 @@ f3.add(controls, 'Zoom', 0.6, 3).onChange(function(v) { inputtedZoom(v) });
 
 // Restart simulation. Only used when reloading data
 function restart(graph) {
+  window.graph = graph
   max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
   min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
   if (controls['Node scaling exponent'] > 0) {
@@ -130,7 +162,8 @@ function restart(graph) {
 
 }
 
-handle_URL_JSON(controls['Path to JSON'])
+handle_url(controls['Path to file (csv or json)']);
+upload_event();
 
 
 // Network functions
@@ -164,11 +197,7 @@ function drawLink(d) {
 }
 
 function drawNode(d) {
-  if (d.size) { 
-    thisnodesize = (d.size)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
-  } else {
-    thisnodesize = 1 * node_size_norm * controls['Node size'];
-  };
+  thisnodesize = (d.size || 1)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
   context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
   context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
 }
@@ -291,92 +320,123 @@ function inputtedZoom(v) {
 // Handle input data
 // -----------------
 
-function handle_URL_JSON() {
-  d3.json(controls['Path to JSON'], function(error, graph) {
-    if (error) {
+function handle_url() {
+  if (controls['Path to file (csv or json)'].endsWith(".json")) {
+    d3.json(controls['Path to file (csv or json)'], function(error, graph) {
+      if (error) {
+        swal({text: "File not found", icon: "error"})
+        return false
+      }
+      restart_if_valid_JSON(graph);
+    })
+  } else if (controls['Path to file (csv or json)'].endsWith(".csv")) {
+    try {
+      fetch(controls['Path to file (csv or json)']).then(r => r.text()).then(r => restart_if_valid_CSV(r));
+    } catch(error) {
+      throw error;
       swal({text: "File not found", icon: "error"})
-      return false
     }
-    restart_if_valid(graph);
+  }
+}
+
+
+function restart_if_valid_JSON(graph) {
+  // Check for 'nodes' and 'links' lists
+  if (!graph.nodes || graph.nodes.length == 0) {
+    swal({text: "Dataset does not have a key 'nodes'", icon: "error"})
+    return false
+  }
+  if (!graph.links) {
+    swal({text: "Dataset does not have a key 'links'", icon: "warning"})
+  }
+
+  // Check that node and link objects are formatted right
+  for (var d of graph.nodes) {
+    if (!d3.keys(d).includes("id")) {
+      swal({text: "Found objects in 'nodes' without 'id' key.", icon: "error"});
+      return false;
+    }
+  }
+  for (var d of graph.links) {
+    if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
+      swal({text: "Found objects in 'links' without 'source' or 'target' key.", icon: "error"});
+      return false;
+    }
+  }
+
+  // Check that 'links' and 'nodes' data are congruent
+  var nodes_nodes = graph.nodes.map(d => {return d.id});
+  var nodes_nodes_set = new Set(nodes_nodes)
+  var links_nodes_set = new Set()
+  graph.links.forEach(l => {
+    links_nodes_set.add(l.source); links_nodes_set.add(l.source.id)  // Either l.source or l.source.id will be null
+    links_nodes_set.add(l.target); links_nodes_set.add(l.target.id)  // so just add both and remove null later (same for target)
+  }); links_nodes_set.delete(undefined)
+
+  if (nodes_nodes_set.size == 0) {
+    swal({text: "No nodes found.", icon: "error"})
+    return false;
+  }
+  if (nodes_nodes.includes(null)) {
+    swal({text: "Found items in node list without 'id' key.", icon: "error"});
+    return false;
+  }
+  if (nodes_nodes.length != nodes_nodes_set.size) {
+    swal({text: "Found multiple nodes with the same id.", icon: "error"});
+    return false;
+  }
+  if (nodes_nodes_set.size < links_nodes_set.size) {
+    swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
+    return false;
+  }
+
+  // Check for foreign node and link attributes
+  var foreign_nodes_attributes = new Set()
+  graph.nodes.forEach(d => {
+    d3.keys(d).forEach(k => {
+      if (!['id', 'size'].includes(k)) foreign_nodes_attributes.add(k)
+    })
   })
+  var foreign_links_attributes = new Set()
+  graph.links.forEach(d => {
+    d3.keys(d).forEach(k => {
+      if (!['source', 'target', 'weight'].includes(k)) foreign_links_attributes.add(k)
+    })
+  })
+  if (foreign_nodes_attributes.size > 0) {
+    swal({text: "Found unexpected node attribute(s): " + Array.from(foreign_nodes_attributes).join(", "), icon: "warning"})
+  }
+  if (foreign_links_attributes.size > 0) {
+    swal({text: "Found unexpected link attribute(s): " + Array.from(foreign_links_attributes).join(", "), icon: "warning"})
+  }
+
+  // Run the restart if all of this was OK
+  restart(graph);
 }
 
 
-function restart_if_valid(graph) {
-// Check for 'nodes' and 'links' lists
-    if (!graph.nodes || graph.nodes.length == 0) {
-      swal({text: "Dataset does not have a key 'nodes'", icon: "error"})
-      return false
-    }
-    if (!graph.links) {
-      swal({text: "Dataset does not have a key 'links'", icon: "warning"})
-    }
+function restart_if_valid_CSV(raw_input) {
+  // For now just assume header line is "source,target(,weight)"
+  var links = d3.csvParse(raw_input)
+  var nodes = []
+  links.forEach(l => {
+    nodes.push(l.source)
+    nodes.push(l.target)
+  });
+  var node_sizes = Counter(nodes)
 
-    // Check that node and link objects are formatted right
-    for (d of graph.nodes) {
-      if (!d3.keys(d).includes("id")) {
-        swal({text: "Found objects in 'nodes' without 'id' key.", icon: "error"});
-        return false;
-      }
-    }
-    for (d of graph.links) {
-      if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
-        swal({text: "Found objects in 'links' without 'source' or 'target' key.", icon: "error"});
-        return false;
-      }
-    }
+  var graph = {'nodes': [], 'links': links}
+  d3.keys(node_sizes).forEach(k => {graph.nodes.push({'id': k, 'size': node_sizes[k]})})
 
-    // Check that 'links' and 'nodes' data are congruent
-    var nodes_nodes = graph.nodes.map(d => {return d.id});
-    var nodes_nodes_set = new Set(nodes_nodes)
-    var links_nodes_set = new Set()
-    graph.links.forEach(l => {
-      links_nodes_set.add(l.source); links_nodes_set.add(l.source.id)  // Either l.source or l.source.id will be null
-      links_nodes_set.add(l.target); links_nodes_set.add(l.target.id)  // so just add both and remove null later (same for target)
-    }); links_nodes_set.delete(undefined)
-
-    if (nodes_nodes_set.size == 0) {
-      swal({text: "No nodes found.", icon: "error"})
-      return false;
-    }
-    if (nodes_nodes.includes(null)) {
-      swal({text: "Found items in node list without 'id' key.", icon: "error"});
-      return false;
-    }
-    if (nodes_nodes.length != nodes_nodes_set.size) {
-      swal({text: "Found multiple nodes with the same id.", icon: "error"});
-      return false;
-    }
-    if (nodes_nodes_set.size < links_nodes_set.size) {
-      swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
-      return false;
-    }
-
-    // Check the node and link attributes
-    var foreign_nodes_attributes = new Set()
-    graph.nodes.forEach(d => {
-      d3.keys(d).forEach(k => {
-        if (!['id', 'size'].includes(k)) foreign_nodes_attributes.add(k)
-      })
-    })
-    var foreign_links_attributes = new Set()
-    graph.links.forEach(d => {
-      d3.keys(d).forEach(k => {
-        if (!['source', 'target', 'weight'].includes(k)) foreign_links_attributes.add(k)
-      })
-    })
-    if (foreign_nodes_attributes.size > 0) {
-      swal({text: "Found unexpected node attribute(s): " + Array.from(foreign_nodes_attributes).join(", "), icon: "warning"})
-    }
-    if (foreign_links_attributes.size > 0) {
-      swal({text: "Found unexpected link attribute(s): " + Array.from(foreign_links_attributes).join(", "), icon: "warning"})
-    }
-
-    // Run the restart if all of this was OK
-    restart(graph);
+  restart(graph);
 }
-
 
 // Various utilities
 // -----------------
 
+// Utility functions
+function Counter(array) {
+  var count = {};
+  array.forEach(val => count[val] = (count[val] || 0) + 1);
+  return count;
+}
