@@ -7,6 +7,12 @@ var parentdiv = document.getElementsByClassName("canvas_container")[0]
 canvas.width = parentdiv.offsetWidth
 canvas.height = parentdiv.offsetHeight
 
+window.onresize = function () {
+  canvas_offset_x = canvas.getBoundingClientRect().x
+  canvas_offset_y = canvas.getBoundingClientRect().y
+}
+window.onresize()
+
 context = canvas.getContext("2d")
 width = canvas.width
 height = canvas.height
@@ -190,8 +196,8 @@ function dragstarted() {
 
 
 function dragged() {
-  d3.event.subject.fx = zoom_scaler.invert(event.clientX);
-  d3.event.subject.fy = zoom_scaler.invert(event.clientY);
+  d3.event.subject.fx = zoom_scaler.invert(event.clientX - canvas_offset_x);
+  d3.event.subject.fy = zoom_scaler.invert(event.clientY - canvas_offset_y);
 }
 
 function dragended() {
