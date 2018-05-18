@@ -1,7 +1,6 @@
 .parent_div {
 	width: calc(1020px * 1.15);
 	height: calc(700px * 1.15);
-	overflow: auto;
 	position: absolute;
 	margin: auto;
 	top: 0;
@@ -17,9 +16,10 @@
 }
 
 .canvas_container {
-	width: calc(690px * 1.15);
-	height: calc(690px * 1.15);
+	width: calc(695px * 1.15);
+	height: calc(695px * 1.15);
 	border-style: dashed;
+	border-width: 2px;
 }
 
 .child_div2 {
