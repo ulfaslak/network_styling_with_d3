@@ -3,8 +3,9 @@
 
 // Canvas
 var canvas = document.querySelector("canvas")
-canvas.width = window.innerWidth * 0.75
-canvas.height = window.innerWidth * 0.75
+var parentdiv = document.getElementsByClassName("canvas_container")[0]
+canvas.width = parentdiv.offsetWidth
+canvas.height = parentdiv.offsetHeight
 
 context = canvas.getContext("2d")
 width = canvas.width
@@ -89,9 +90,9 @@ var controls = {
 
 // Control panel
 var gui = new dat.GUI({ autoPlace: false});
-gui.width = window.innerWidth * 0.25;
-gui.closed = true;
-var customContainer = document.getElementsByClassName('child_div2_child_child')[0];
+var customContainer = document.getElementsByClassName('controls_container')[0];
+gui.width = customContainer.offsetWidth;
+gui.closed = false;
 customContainer.appendChild(gui.domElement);
 gui.remember(controls);
 

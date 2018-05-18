@@ -1,35 +1,51 @@
 .parent_div {
-	width: 100vw;
-	height: 75vw;
+	width: calc(1000px * 1.3);
+	height: calc(700px * 1.3);
+	overflow: auto;
+	display: inline-block;
+	position: absolute;
+	margin: auto;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
 }
 
 .child_div1 {
-	width: 75vw;
-	height: 75vw;
+	width: calc(700px * 1.3);
+	height: calc(700px * 1.3);
 	float: left;
 }
 
+.canvas_container {
+	width: calc(690px * 1.3);
+	height: calc(690px * 1.3);
+	border-style: dashed;
+}
+
 .child_div2 {
-	width: 25vw;
-	max-height: 75vw;
+	width: calc(300px * 1.3);
+	max-height: calc(700px * 1.3);
 	float: right;
 	overflow-y: scroll;
 }
 
-.child_div2_child1 {
-	width: 25vw;
+.controls_container {
+	width: calc(300px * 1.3);
 	position: relative;
 }
 
 .child_div2_child_mid {
-	width: 25vw;
+	width: calc(300px * 1.3);
 	height: 30px;
 }
 
-.child_div2_child2 {
-	width: 25vw;
+.infotext_container {
+	width: calc(300px * 1.3);
 }
 
 p.sidebar-text {
     color: grey;
+    hyphens: auto;
+    text-align: justify;
 }
