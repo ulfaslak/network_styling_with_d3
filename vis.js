@@ -7,6 +7,7 @@ var parentdiv = document.getElementsByClassName("canvas_container")[0]
 canvas.width = parentdiv.offsetWidth
 canvas.height = parentdiv.offsetHeight
 
+
 window.onresize = function () {
   canvas_offset_x = canvas.getBoundingClientRect().x
   canvas_offset_y = canvas.getBoundingClientRect().y
@@ -114,7 +115,7 @@ f2.add(controls, 'Link strength', 0, 2).onChange(function(v) { inputtedStrength(
 f2.add(controls, 'Link distance', 0.1, 100).onChange(function(v) { inputtedDistance(v) });
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
 
-var f3 = gui.addFolder('Styling'); f3.open();
+var f3 = gui.addFolder('Styling'); f3.close();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
 f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
 f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
