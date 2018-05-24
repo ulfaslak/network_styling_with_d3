@@ -81,17 +81,17 @@ var controls = {
   'Center gravity': 0.1,
   'Link strength': 0.5,
   'Link distance': 30,
-  'Link width': 1,
+  'Link width': 2,
   'Link alpha': 0.5,
   'Node size': 10, 
-  'Node stroke size': 2,
+  'Node stroke size': 0.5,
   'Node scaling exponent': 0.5,
   'Link scaling exponent': 1,
-  'Collision': true,
+  'Collision': false,
   'Node fill': '#16a085',
   'Node stroke': '#000000',
   'Link stroke': '#7c7c7c',
-  'Zoom': 1
+  'Zoom': 2
 };
 
 
