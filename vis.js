@@ -32,7 +32,7 @@ var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) { return computeLinkDistance(d); }))
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide(0))
+    .force("collide", d3.forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
 
 // Download figure function (must be defined before control variables)
@@ -84,10 +84,10 @@ var controls = {
   'Link width': 1,
   'Link alpha': 0.5,
   'Node size': 10, 
-  'Node stroke size': 0.1,
+  'Node stroke size': 2,
   'Node scaling exponent': 0.5,
   'Link scaling exponent': 1,
-  'Collision': false,
+  'Collision': true,
   'Node fill': '#16a085',
   'Node stroke': '#000000',
   'Link stroke': '#7c7c7c',
@@ -157,21 +157,22 @@ function restart(graph) {
   function ticked() {
     context.clearRect(0, 0, width, height);
 
-    context.beginPath();
-    graph.links.forEach(drawLink);
+    
     context.strokeStyle = controls['Link stroke'];
-    context.lineWidth = controls['Link width'] * (controls['Zoom'] + (controls['Zoom'] - 1));
+    context.lineWidth = controls['Link width'] * controls['Zoom'];
     context.globalAlpha = controls['Link alpha'];
-    context.stroke();
+    context.globalCompositeOperation = "destination-over"
+    graph.links.forEach(drawLink);
+    
 
-    context.beginPath();
-    graph.nodes.forEach(drawNode);
     context.globalAlpha = 1.0
     context.strokeStyle = controls['Node stroke'];
     context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
-    context.stroke();
     context.fillStyle = controls['Node fill'];
-    context.fill();
+    context.globalCompositeOperation = "source-over"
+    // context.lineWidth *= 2;
+    graph.nodes.forEach(drawNode);
+    
   }
 
   simulation.alpha(1).restart();
@@ -208,14 +209,19 @@ function dragended() {
 }
 
 function drawLink(d) {
+  context.beginPath();
   context.moveTo(zoom_scaler(d.source.x), zoom_scaler(d.source.y));
   context.lineTo(zoom_scaler(d.target.x), zoom_scaler(d.target.y));
+  context.stroke();
 }
 
 function drawNode(d) {
   thisnodesize = (d.size || 1)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
+  context.beginPath();
   context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
   context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
+  context.fill();
+  context.stroke();
 }
 
 
@@ -226,19 +232,17 @@ logscaler = d3.scaleLog()
 zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
 
 function computeNodeRadii(d) {
+  thisnodesize = node_size_norm * controls['Node size'];
   if (d.size) {
-    thisnodesize = (d.size)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
-  } else {
-    thisnodesize = 1 * node_size_norm * controls['Node size'];
-  };
-  return thisnodesize;
+    thisnodesize *= (d.size)**(controls['Node scaling exponent']);
+  }
+  return thisnodesize
 }
 
 function computeLinkDistance(d) {
+  thislinkweight = controls['Link distance'];
   if (d.weight) {
-    thislinkweight = 1 / d.weight**(controls['Link scaling exponent']) * controls['Link distance'];
-  } else {
-    thislinkweight = controls['Link distance'];
+    thislinkweight *= 1 / d.weight**(controls['Link scaling exponent']);
   }
   return thislinkweight
 }
