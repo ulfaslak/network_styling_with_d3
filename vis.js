@@ -91,7 +91,7 @@ var controls = {
   'Node fill': '#16a085',
   'Node stroke': '#000000',
   'Link stroke': '#7c7c7c',
-  'Zoom': 2
+  'Zoom': 1.5
 };
 
 
@@ -444,6 +444,20 @@ function restart_if_valid_CSV(raw_input) {
     nodes.push(l.target)
   });
   var node_sizes = Counter(nodes)
+
+  // Warn against zero links
+  var zero_links_count = 0
+  links = links.filter(l => {
+    if (l.weight == 0) {
+      zero_links_count += 1;
+    } else {
+      return l;
+    }
+  })
+
+  if (zero_links_count > 0) {
+    swal({text: "Removed " + zero_links_count + " links with weight 0", icon: "warning"})
+  }
 
   var graph = {'nodes': [], 'links': links}
   d3.keys(node_sizes).forEach(k => {graph.nodes.push({'id': k, 'size': node_sizes[k]})})
