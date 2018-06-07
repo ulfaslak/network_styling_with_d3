@@ -44,7 +44,7 @@
 }
 
 p.sidebar-text {
-    color: grey;
+	font-family: 'Open sans', sans-serif; color: #777777; font-size: 14px;
     hyphens: auto;
     text-align: justify;
 }
