@@ -77,6 +77,7 @@ var controls = {
   'Path to file (csv or json)': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
   'Upload file (csv or json)': upload_file,
   'Download figure': download,
+  'Apply heat (wiggle)': false,
   'Charge strength': -30,
   'Center gravity': 0.1,
   'Link strength': 0.5,
@@ -114,6 +115,7 @@ f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(
 f2.add(controls, 'Link strength', 0, 2).onChange(function(v) { inputtedStrength(v) });
 f2.add(controls, 'Link distance', 0.1, 100).onChange(function(v) { inputtedDistance(v) });
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
+f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
 
 var f3 = gui.addFolder('Styling'); f3.open();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
@@ -131,14 +133,30 @@ f3.add(controls, 'Zoom', 0.6, 3).onChange(function(v) { inputtedZoom(v) });
 // Restart simulation. Only used when reloading data
 function restart(graph) {
   window.graph = graph
+
+  // Compute node size norm
   max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
   min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+  
   if (controls['Node scaling exponent'] > 0) {
     node_size_norm = 1 / max_node_size**(controls['Node scaling exponent'])
   } else {
     node_size_norm = 1 / min_node_size**(controls['Node scaling exponent'])
   }
 
+  // Sort out node colors
+  var node_groups = new Set(graph.nodes.filter(n => 'group' in n).map(n => {return n.group}))
+  for (var g of node_groups) {
+    if (typeof(g) == "string") {
+      active_swatch[g] = g
+    } else {
+      active_swatch[g] = '#'+Math.floor(Math.random()*16777215).toString(16);
+    }
+  }
+  window.reference_swatch = _.clone(active_swatch)
+  reference_color = controls['Node fill']
+
+  // Start simulation
   simulation
       .nodes(graph.nodes)
       .on("tick", ticked);
@@ -168,7 +186,6 @@ function restart(graph) {
     context.globalAlpha = 1.0
     context.strokeStyle = controls['Node stroke'];
     context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
-    context.fillStyle = controls['Node fill'];
     context.globalCompositeOperation = "source-over"
     // context.lineWidth *= 2;
     graph.nodes.forEach(drawNode);
@@ -220,6 +237,7 @@ function drawNode(d) {
   context.beginPath();
   context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
   context.arc(zoom_scaler(d.x), zoom_scaler(d.y), thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
+  context.fillStyle = computeNodeColor(d);
   context.fill();
   context.stroke();
 }
@@ -230,6 +248,7 @@ function drawNode(d) {
 
 logscaler = d3.scaleLog()
 zoom_scaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
+active_swatch = {0: controls['Node fill']}
 
 function computeNodeRadii(d) {
   thisnodesize = node_size_norm * controls['Node size'];
@@ -245,6 +264,14 @@ function computeLinkDistance(d) {
     thislinkweight *= 1 / d.weight**(controls['Link scaling exponent']);
   }
   return thislinkweight
+}
+
+function computeNodeColor(d) {
+  if (d.group) {
+    return active_swatch[d.group]
+  } else {
+    return controls['Node fill']
+  }
 }
 
 // Input handling functions
@@ -277,9 +304,30 @@ function inputtedCollision(v) {
   simulation.alpha(1).restart();
 }
 
+function inputtedReheat(v) {
+  simulation.alpha(0.5);
+  simulation.alphaTarget(v).restart();
+}
+
 
 // Styling
 function inputtedNodeFill(v) {
+
+  window.dr = parseInt(v.slice(1, 3), 16) - parseInt(reference_color.slice(1, 3), 16)
+  window.dg = parseInt(v.slice(3, 5), 16) - parseInt(reference_color.slice(3, 5), 16)
+  window.db = parseInt(v.slice(5, 7), 16) - parseInt(reference_color.slice(5, 7), 16)
+
+  for (var g of d3.keys(active_swatch)) {
+
+    if (!isNaN(+g)) {
+
+      var r_ = bounce_modulus(parseInt(reference_swatch[g].slice(1, 3), 16) + dr, 0, 255);
+      var g_ = bounce_modulus(parseInt(reference_swatch[g].slice(3, 5), 16) + dg, 0, 255);
+      var b_ = bounce_modulus(parseInt(reference_swatch[g].slice(5, 7), 16) + db, 0, 255);
+
+      active_swatch[g] = '#' + toHex(r_) + toHex(g_) + toHex(b_);
+    }
+  }
   simulation.restart();
 }
 
@@ -409,12 +457,23 @@ function restart_if_valid_JSON(graph) {
     swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
     return false;
   }
+  var count_group = graph.nodes.filter(n => { return 'group' in n }).length
+  if (0 < count_group & count_group < graph.nodes.length) {
+    swal({text: "Found nodes with and nodes without 'group' attribute", icon: "error"});
+    return false; 
+  }
+  var count_size = graph.nodes.filter(n => { return 'size' in n }).length
+  if (0 < count_size & count_size < graph.nodes.length) {
+    console.log(count_size, graph.nodes.length)
+    swal({text: "Found nodes with and nodes without 'size' attribute", icon: "error"});
+    return false; 
+  }
 
   // Check for foreign node and link attributes
   var foreign_nodes_attributes = new Set()
   graph.nodes.forEach(d => {
     d3.keys(d).forEach(k => {
-      if (!['id', 'size'].includes(k)) foreign_nodes_attributes.add(k)
+      if (!['id', 'size', 'group'].includes(k)) foreign_nodes_attributes.add(k)
     })
   })
   var foreign_links_attributes = new Set()
@@ -473,4 +532,22 @@ function Counter(array) {
   var count = {};
   array.forEach(val => count[val] = (count[val] || 0) + 1);
   return count;
+}
+
+function bounce_modulus(v, lower, upper) {
+  if (lower <= v & v <= upper) {
+    return v;
+  }
+  if (v < lower) {
+    return bounce_modulus(lower + (lower - v), lower, upper);
+  }
+  if (v > upper) {
+    return bounce_modulus(upper - (v - upper), lower, upper);
+  }
+}
+
+function toHex(v) {
+  var hv = v.toString(16)
+  if (hv.length == 1) hv = "0" + hv;
+  return hv;
 }
