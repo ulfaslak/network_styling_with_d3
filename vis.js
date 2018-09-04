@@ -70,6 +70,7 @@ function upload_event() {
 var upload_file = function() {
   var uploader = document.getElementById('upload');
   uploader.click()
+  upload_event();
 }
 
 // Control variables
@@ -87,7 +88,7 @@ var controls = {
   'Node size': 10, 
   'Node stroke size': 0.5,
   'Node scaling exponent': 0.5,
-  'Link scaling exponent': 1,
+  'Link scaling exponent': 0.5,
   'Collision': false,
   'Node fill': '#16a085',
   'Node stroke': '#000000',
@@ -121,7 +122,7 @@ var f3 = gui.addFolder('Styling'); f3.open();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
 f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
 f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
-f3.add(controls, 'Link width', 0.1, 10).onChange(function(v) { inputtedLinkWidth(v) });
+f3.add(controls, 'Link width', 0.01, 10).onChange(function(v) { inputtedLinkWidth(v) });
 f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
 f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
@@ -137,11 +138,19 @@ function restart(graph) {
   // Compute node size norm
   max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
   min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
+
+  max_link_width = d3.max(graph.links.map(l => { if (l.weight) { return l.weight } else return 0; }));
+  min_link_width = d3.min(graph.links.map(l => { if (l.weight) { return l.weight } else return 1; }));
   
   if (controls['Node scaling exponent'] > 0) {
     node_size_norm = 1 / max_node_size**(controls['Node scaling exponent'])
   } else {
     node_size_norm = 1 / min_node_size**(controls['Node scaling exponent'])
+  }
+  if (controls['Link scaling exponent'] > 0) {
+    link_width_norm = 3 / max_link_width**(controls['Link scaling exponent'])
+  } else {
+    link_width_norm = 3 / min_link_width**(controls['Link scaling exponent'])
   }
 
   // Sort out node colors
@@ -177,7 +186,6 @@ function restart(graph) {
 
     
     context.strokeStyle = controls['Link stroke'];
-    context.lineWidth = controls['Link width'] * controls['Zoom'];
     context.globalAlpha = controls['Link alpha'];
     context.globalCompositeOperation = "destination-over"
     graph.links.forEach(drawLink);
@@ -226,9 +234,11 @@ function dragended() {
 }
 
 function drawLink(d) {
+  thislinkwidth = ((d.weight || 1) * link_width_norm)**(controls['Link scaling exponent']) * controls['Link width'];
   context.beginPath();
   context.moveTo(zoom_scaler(d.source.x), zoom_scaler(d.source.y));
   context.lineTo(zoom_scaler(d.target.x), zoom_scaler(d.target.y));
+  context.lineWidth = thislinkwidth * controls['Zoom'];
   context.stroke();
 }
 
