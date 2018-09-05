@@ -678,5 +678,4 @@ window.addEventListener("mousedown", function() {
     }
     simulation.restart();
   }
-  console.log(hoveredNode, xy)
 }, true)
