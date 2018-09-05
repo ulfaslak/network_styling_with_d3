@@ -2,11 +2,10 @@
 // source: https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
 
 // Canvas
-var canvas = document.querySelector("canvas")
+canvas = document.querySelector("canvas")
 var parentdiv = document.getElementsByClassName("canvas_container")[0]
 canvas.width = parentdiv.offsetWidth
 canvas.height = parentdiv.offsetHeight
-
 
 window.onresize = function () {
   canvas_offset_x = canvas.getBoundingClientRect().x
@@ -83,7 +82,7 @@ var controls = {
   'Center gravity': 0.1,
   'Link strength': 0.5,
   'Link distance': 30,
-  'Link width': 2,
+  'Link width': 5,
   'Link alpha': 0.5,
   'Node size': 10, 
   'Node stroke size': 0.5,
@@ -93,6 +92,8 @@ var controls = {
   'Node fill': '#16a085',
   'Node stroke': '#000000',
   'Link stroke': '#7c7c7c',
+  'Label stroke': '#000000',
+  'Show labels': false,
   'Zoom': 1.5,
   'Min. link weight %': 0,
   'Max. link weight %': 100
@@ -123,13 +124,15 @@ var f3 = gui.addFolder('Styling'); f3.open();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
 f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
 f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
-f3.add(controls, 'Link width', 0.01, 10).onChange(function(v) { inputtedLinkWidth(v) });
+f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) });
+f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) });
+f3.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) });
 f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
 f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
 f3.add(controls, 'Node scaling exponent', -1., 1.).onChange(function(v) { inputtedNodeScalingRoot(v) });
 f3.add(controls, 'Link scaling exponent', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
-f3.add(controls, 'Zoom', 0.6, 3).onChange(function(v) { inputtedZoom(v) });
+f3.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) });
 
 var f4 = gui.addFolder('Percolation'); f4.close();
 f4.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen();
@@ -187,7 +190,7 @@ upload_event();
 // -----------------
 
 function dragsubject() {
-  return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y));
+  return simulation.find(zoom_scaler.invert(d3.event.x), zoom_scaler.invert(d3.event.y), 20);
 }
 
 function dragstarted() {
@@ -209,7 +212,7 @@ function dragended() {
 }
 
 function drawLink(d) {
-  thislinkwidth = ((d.weight || 1) * link_width_norm)**(controls['Link scaling exponent']) * controls['Link width'];
+  thislinkwidth = (d.weight || 1)**(controls['Link scaling exponent']) * link_width_norm * controls['Link width'];
   context.beginPath();
   context.moveTo(zoom_scaler(d.source.x), zoom_scaler(d.source.y));
   context.lineTo(zoom_scaler(d.target.x), zoom_scaler(d.target.y));
@@ -218,6 +221,7 @@ function drawLink(d) {
 }
 
 function drawNode(d) {
+  // Node
   thisnodesize = (d.size || 1)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
   context.beginPath();
   context.moveTo(zoom_scaler(d.x) + thisnodesize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoom_scaler(d.y));
@@ -225,6 +229,14 @@ function drawNode(d) {
   context.fillStyle = computeNodeColor(d);
   context.fill();
   context.stroke();
+
+  // Text
+  if (controls['Show labels']) {
+    context.font = clip(thisnodesize * controls['Zoom'] * 2, 10, 20) + "px Helvetica"
+    context.fillStyle = controls['Label stroke']
+    context.fillText(d.id, zoom_scaler(d.x), zoom_scaler(d.y))
+    context.stroke();
+  }
 }
 
 
@@ -289,7 +301,7 @@ function inputtedCollision(v) {
   simulation.alpha(1).restart();
 }
 
-function inputtedReheat(v) {
+function inputtedReheat(v) {+
   simulation.alpha(0.5);
   simulation.alphaTarget(v).restart();
 }
@@ -321,6 +333,14 @@ function inputtedNodeStroke(v) {
 }
 
 function inputtedLinkStroke(v) {
+  simulation.restart();
+}
+
+function inputtedTextStroke(v) {
+  simulation.restart();
+}
+
+function inputtedShowLabels(v) {
   simulation.restart();
 }
 
@@ -360,6 +380,11 @@ function inputtedNodeScalingRoot(v) {
 }
 
 function inputtedLinkScalingRoot(v) {
+  if (controls['Link scaling exponent'] > 0) {
+    link_width_norm = 1 / max_link_width**(controls['Link scaling exponent'])
+  } else {
+    link_width_norm = 1 / min_link_width**(controls['Link scaling exponent'])
+  }
   simulation.force("link").distance(function(d) { return computeLinkDistance(d); });
   simulation.alpha(1).restart();
 }
@@ -500,7 +525,7 @@ function restart_if_valid_JSON(raw_graph) {
   master_graph = raw_graph
 
   // Compute and store global variables
-  compute_graph_globals(master_graph)
+  compute_graph_globals(master_graph);
 
   // Run the restart if all of this was OK
   restart(shave(_.clone(master_graph)));
@@ -535,7 +560,7 @@ function restart_if_valid_CSV(raw_input) {
   d3.keys(node_sizes).forEach(k => {master_graph.nodes.push({'id': k, 'size': node_sizes[k]})})
 
   // Compute and store global variables
-  compute_graph_globals(master_graph)
+  compute_graph_globals(master_graph);
 
   // Input graph that respects user input percolation boundaries
   restart(shave(_.clone(master_graph)));
@@ -558,9 +583,9 @@ function compute_graph_globals(graph) {
     node_size_norm = 1 / min_node_size**(controls['Node scaling exponent'])
   }
   if (controls['Link scaling exponent'] > 0) {
-    link_width_norm = 3 / max_link_width**(controls['Link scaling exponent'])
+    link_width_norm = 1 / max_link_width**(controls['Link scaling exponent'])
   } else {
-    link_width_norm = 3 / min_link_width**(controls['Link scaling exponent'])
+    link_width_norm = 1 / min_link_width**(controls['Link scaling exponent'])
   }
 
   // Sort out node colors
@@ -577,6 +602,7 @@ function compute_graph_globals(graph) {
 }
 
 function shave(input_graph) {
+
   // Compute what number a percentage corresponds to
   var interval_range = function(percent) {
     return percent / 100 * (max_link_width - min_link_width) + min_link_width
@@ -613,6 +639,16 @@ function toHex(v) {
   return hv;
 }
 
+function clip(val, lower, upper) {
+  if (val < lower) {
+    return lower
+  } else if (val > upper) {
+    return upper
+  } else {
+    return val
+  }
+}
+
 // Handle key events //
 // ----------------- // 
 var shiftDown = false
@@ -623,3 +659,8 @@ window.onkeydown = function(){
 window.onkeyup = function(){
     shiftDown = false;
 }
+
+d3.select(canvas).on("mousemove", function() {
+  var xy = d3.mouse(this) 
+  var hoveredNode = simulation.find(zoom_scaler.invert(xy[0]), zoom_scaler.invert(xy[1]), 20)
+})
