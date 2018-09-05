@@ -31,7 +31,7 @@ var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(function(d) { return computeLinkDistance(d); }))
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
+    .force("collide", d3. forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
 
 // Download figure function (must be defined before control variables)
@@ -229,11 +229,10 @@ function drawNode(d) {
   context.stroke();
 
   // Text
-  if (controls['Show labels']) {
+  if (controls['Show labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
     context.font = clip(thisnodesize * controls['Zoom'] * 2, 10, 20) + "px Helvetica"
     context.fillStyle = controls['Label stroke']
     context.fillText(d.id, zoom_scaler(d.x), zoom_scaler(d.y))
-    context.stroke();
   }
 }
 
@@ -490,7 +489,6 @@ function restart_if_valid_JSON(raw_graph) {
   }
   var count_size = raw_graph.nodes.filter(n => { return 'size' in n }).length
   if (0 < count_size & count_size < raw_graph.nodes.length) {
-    console.log(count_size, raw_graph.nodes.length)
     swal({text: "Found nodes with and nodes without 'size' attribute", icon: "error"});
     return false; 
   }
@@ -653,7 +651,25 @@ window.onkeyup = function(){
     shiftDown = false;
 }
 
+var hoveredNode;
+var selectedNodes = [];
 d3.select(canvas).on("mousemove", function() {
-  var xy = d3.mouse(this) 
-  var hoveredNode = simulation.find(zoom_scaler.invert(xy[0]), zoom_scaler.invert(xy[1]), 20)
+  if (!controls['Show labels']) {
+    var xy = d3.mouse(this) 
+    hoveredNode = simulation.find(zoom_scaler.invert(xy[0]), zoom_scaler.invert(xy[1]), 20)
+    if (typeof(hoveredNode) != 'undefined') {
+      hoveredNode = hoveredNode.id;
+      simulation.restart();
+    }
+  }
 })
+
+window.addEventListener("mousedown", function() { 
+  if (typeof(hoveredNode) != 'undefined') {
+    if (selectedNodes.includes(hoveredNode)) {
+      selectedNodes.pop(hoveredNode)
+    } else {
+      selectedNodes.push(hoveredNode)
+    }
+  }
+}, true)
