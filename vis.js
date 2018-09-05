@@ -75,7 +75,7 @@ var upload_file = function() {
 
 // Control variables
 var controls = {
-  'Path to file (csv or json)': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json",
+  'Path to file (csv or json)': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json",
   'Upload file (csv or json)': upload_file,
   'Download figure': download,
   'Apply heat (wiggle)': false,
@@ -114,7 +114,7 @@ f1.add(controls, 'Download figure');
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
 f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) });
-f2.add(controls, 'Link strength', 0, 2).onChange(function(v) { inputtedStrength(v) });
+f2.add(controls, 'Link strength', 0, 1).onChange(function(v) { inputtedStrength(v) });
 f2.add(controls, 'Link distance', 0.1, 100).onChange(function(v) { inputtedDistance(v) });
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
 f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
@@ -131,7 +131,7 @@ f3.add(controls, 'Node scaling exponent', -1., 1.).onChange(function(v) { inputt
 f3.add(controls, 'Link scaling exponent', -1., 1.).onChange(function(v) { inputtedLinkScalingRoot(v) });
 f3.add(controls, 'Zoom', 0.6, 3).onChange(function(v) { inputtedZoom(v) });
 
-var f4 = gui.addFolder('Manipulation'); f4.close();
+var f4 = gui.addFolder('Percolation'); f4.close();
 f4.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen();
 f4.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen();
 
@@ -577,8 +577,12 @@ function compute_graph_globals(graph) {
 }
 
 function shave(input_graph) {
-  var interval_range = function(percent) { return percent / 100 * (max_link_width - min_link_width) + min_link_width}
-  output_graph = input_graph
+  // Compute what number a percentage corresponds to
+  var interval_range = function(percent) {
+    return percent / 100 * (max_link_width - min_link_width) + min_link_width
+  }
+  // Shave links
+  var output_graph = input_graph
   output_graph['links'] = output_graph.links.filter(l => {
     return (interval_range(controls['Min. link weight %']) <= l.weight) && (l.weight <= interval_range(controls['Max. link weight %']))
   })
