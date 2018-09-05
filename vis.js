@@ -173,6 +173,7 @@ function restart(graph) {
     context.globalCompositeOperation = "source-over"
     // context.lineWidth *= 2;
     graph.nodes.forEach(drawNode);
+    graph.nodes.forEach(drawText);
     
   }
 
@@ -227,9 +228,11 @@ function drawNode(d) {
   context.fillStyle = computeNodeColor(d);
   context.fill();
   context.stroke();
+}
 
-  // Text
+function drawText(d) {
   if (controls['Show labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
+    thisnodesize = (d.size || 1)**(controls['Node scaling exponent']) * node_size_norm * controls['Node size'];
     context.font = clip(thisnodesize * controls['Zoom'] * 2, 10, 20) + "px Helvetica"
     context.fillStyle = controls['Label stroke']
     context.fillText(d.id, zoom_scaler(d.x), zoom_scaler(d.y))
@@ -644,18 +647,20 @@ function clip(val, lower, upper) {
 // ----------------- // 
 var shiftDown = false
 window.onkeydown = function(){
-    if (window.event.keyCode == 16)
-      shiftDown = true;
+  if (window.event.keyCode == 16) {
+    shiftDown = true;
+  }
 }
 window.onkeyup = function(){
-    shiftDown = false;
+  shiftDown = false;
 }
 
 var hoveredNode;
 var selectedNodes = [];
+var xy;
 d3.select(canvas).on("mousemove", function() {
   if (!controls['Show labels']) {
-    var xy = d3.mouse(this) 
+    xy = d3.mouse(this) 
     hoveredNode = simulation.find(zoom_scaler.invert(xy[0]), zoom_scaler.invert(xy[1]), 20)
     if (typeof(hoveredNode) != 'undefined') {
       hoveredNode = hoveredNode.id;
@@ -667,9 +672,11 @@ d3.select(canvas).on("mousemove", function() {
 window.addEventListener("mousedown", function() { 
   if (typeof(hoveredNode) != 'undefined') {
     if (selectedNodes.includes(hoveredNode)) {
-      selectedNodes.pop(hoveredNode)
+      selectedNodes.splice(selectedNodes.indexOf(hoveredNode), 1)
     } else {
       selectedNodes.push(hoveredNode)
     }
+    simulation.restart();
   }
+  console.log(hoveredNode, xy)
 }, true)
