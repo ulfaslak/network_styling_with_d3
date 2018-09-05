@@ -80,7 +80,6 @@ var controls = {
   'Apply heat (wiggle)': false,
   'Charge strength': -30,
   'Center gravity': 0.1,
-  'Link strength': 0.5,
   'Link distance': 30,
   'Link width': 5,
   'Link alpha': 0.5,
@@ -115,7 +114,6 @@ f1.add(controls, 'Download figure');
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
 f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) });
-f2.add(controls, 'Link strength', 0, 1).onChange(function(v) { inputtedStrength(v) });
 f2.add(controls, 'Link distance', 0.1, 100).onChange(function(v) { inputtedDistance(v) });
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
 f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
@@ -283,11 +281,6 @@ function inputtedCharge(v) {
 function inputtedGravity(v) {
   simulation.force("x").strength(+v);
   simulation.force("y").strength(+v);
-  simulation.alpha(1).restart();
-}
-
-function inputtedStrength(v) {
-  simulation.force("link").strength(+v);
   simulation.alpha(1).restart();
 }
 
