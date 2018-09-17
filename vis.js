@@ -695,8 +695,8 @@ d3.select(canvas).on("mousemove", function() {
     hoveredNode = simulation.find(zoom_scaler.invert(xy[0]), zoom_scaler.invert(xy[1]), 20)
     if (typeof(hoveredNode) != 'undefined') {
       hoveredNode = hoveredNode.id;
-      simulation.restart();
     }
+    simulation.restart();
   }
 })
 
