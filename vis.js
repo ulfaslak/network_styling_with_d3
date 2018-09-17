@@ -538,8 +538,8 @@ function restart_if_valid_CSV(raw_input) {
   
   var node_strengths = new DefaultDict(Number)
   links.forEach(l => {
-    node_strengths[l.source] += valIfValid(l.weight, 1);
-    node_strengths[l.target] += valIfValid(l.weight, 1);
+    node_strengths[l.source] += +valIfValid(l.weight, 1);
+    node_strengths[l.target] += +valIfValid(l.weight, 1);
   });
 
   // Warn against zero links
