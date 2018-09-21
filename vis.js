@@ -89,7 +89,7 @@ var controls = {
   'Node size': 10, 
   'Node stroke size': 0.5,
   'Node size exponent': 0.5,
-  'Link strength exponent': 0.,
+  'Link strength exponent': 0.1,
   'Link width exponent': 0.5,
   'Collision': false,
   'Node fill': '#16a085',
@@ -119,7 +119,7 @@ var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
 f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) });
 f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) });
-f2.add(controls, 'Link strength exponent', 0., 1.).onChange(function(v) { inputtedLinkStrengthExponent(v) });
+f2.add(controls, 'Link strength exponent', 0., 1).onChange(function(v) { inputtedLinkStrengthExponent(v) });
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
 f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
 
@@ -491,6 +491,15 @@ function restart_if_valid_JSON(raw_graph) {
     swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
     return false;
   }
+
+  // Check that attributes are indicated consistently in both nodes and links
+  var count_weight = raw_graph.links.filter(n => { return 'weight' in n }).length
+  if (0 < count_weight & count_weight < raw_graph.links.length) {
+    swal({text: "Found links with and links without 'weight' attribute", icon: "error"});
+    return false; 
+  } else if (count_weight == 0) {
+    raw_graph.links.forEach(l => {l.weight = 1;})
+  }
   var count_group = raw_graph.nodes.filter(n => { return 'group' in n }).length
   if (0 < count_group & count_group < raw_graph.nodes.length) {
     swal({text: "Found nodes with and nodes without 'group' attribute", icon: "error"});
@@ -500,6 +509,14 @@ function restart_if_valid_JSON(raw_graph) {
   if (0 < count_size & count_size < raw_graph.nodes.length) {
     swal({text: "Found nodes with and nodes without 'size' attribute", icon: "error"});
     return false; 
+  }
+  else if (count_size == 0) {
+    var node_strengths = new DefaultDict(Number)
+    raw_graph.links.forEach(l => {
+      node_strengths[l.source] += valIfValid(l.weight, 1);
+      node_strengths[l.target] += valIfValid(l.weight, 1);
+    });
+    raw_graph.nodes.forEach(n => {n.size = node_strengths[n.id];})
   }
 
   // Check for foreign node and link attributes
