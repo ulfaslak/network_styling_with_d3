@@ -552,7 +552,7 @@ function restart_if_valid_JSON(raw_graph) {
 function restart_if_valid_CSV(raw_input) {
   // Assume header is "source,target(,weight)"
   var links = d3.csvParse(raw_input).map(l => {
-    return {'source': l.source, 'target': l.target, 'weight': valIfValid(l.weight, 1)}
+    return {'source': l.source, 'target': l.target, 'weight': +valIfValid(l.weight, 1)}
   })
 
   var node_strengths = new DefaultDict(Number)
