@@ -103,10 +103,11 @@ function vis(new_controls) {
       'Max. link weight %': 100
     };
 
-    Reflect.ownKeys(new_controls).forEach(key => controls[key] = new_controls[key]);
+    Reflect.ownKeys(new_controls).forEach(function(key){
 
+        controls[key] = new_controls[key];
+    });
 
-    // Control panel
     var gui = new dat.GUI({ autoPlace: false});
     var customContainer = document.getElementsByClassName('controls_container')[0];
     gui.width = customContainer.offsetWidth;
@@ -630,6 +631,33 @@ function vis(new_controls) {
         node_degrees[l.source] += 1;
         node_degrees[l.target] += 1;
       });
+
+        // pass the new values to the simulation
+        Reflect.ownKeys(new_controls).forEach(function(key){
+
+            let v = new_controls[key];
+
+            if (key == 'Charge strength') inputtedCharge(v);
+            if (key == 'Center gravity') inputtedGravity(v);
+            if (key == 'Link distance') inputtedDistance(v);
+            if (key == 'Link strength exponent') inputtedLinkStrengthExponent(v);
+            if (key == 'Collision') inputtedCollision(v);
+
+            if (key == 'Node fill') inputtedNodeFill(v);
+            if (key == 'Node stroke') inputtedNodeStroke(v);
+            if (key == 'Link stroke') inputtedLinkStroke(v);
+            if (key == 'Label stroke') inputtedTextStroke(v);
+            if (key == 'Show labels') inputtedShowLabels(v);
+            if (key == 'Link width') inputtedLinkWidth(v);
+            if (key == 'Link alpha') inputtedLinkAlpha(v);
+            if (key == 'Node size') inputtedNodeSize(v);
+            if (key == 'Node stroke size') inputtedNodeStrokeSize(v);
+            if (key == 'Node size exponent') inputtedNodeSizeExponent(v);
+            if (key == 'Link width exponent') inputtedLinkWidthExponent(v);
+            if (key == 'Zoom') inputtedZoom(v);
+        });
+
+        // Control panel
     }
 
     function shave(input_graph) {
