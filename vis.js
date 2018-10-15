@@ -102,6 +102,16 @@ var controls = {
   'Max. link weight %': 100
 };
 
+// =========== GET DATA LOCATION FROM URL PARAMETERS =================
+var this_url =  window.location.href;
+this_url = new URL(this_url);
+var this_data = this_url.searchParams.get("data");
+if ((this_data == "null") || (this_data === null))
+    this_data = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json";
+
+controls['Path to file (csv or json)'] = this_data;
+// ===================================================================
+
 // Control panel
 var gui = new dat.GUI({ autoPlace: false});
 var customContainer = document.getElementsByClassName('controls_container')[0];
