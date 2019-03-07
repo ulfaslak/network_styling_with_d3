@@ -146,6 +146,9 @@ f4.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMa
 // Restart simulation. Only used when reloading data
 function restart(graph) {
 
+  // Make `graph` a window variable that the user can access
+  window.graph = graph;
+  
   // Start simulation
   simulation
       .nodes(graph.nodes)
