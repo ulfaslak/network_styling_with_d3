@@ -1,6 +1,15 @@
+:root {
+	--major-width: 95vw;
+	--major-height: 65.19607845vw;
+	--canvas-dim: 64.730392155vw;
+	--sidebar-width: 27.941176465vw;
+}
+
 .parent_div {
-	width: calc(1020px * 1.15);
-	height: calc(700px * 1.15);
+	width: var(--major-width);
+	height: var(--major-height);
+	max-width: 138.428571415vh;
+	max-height: 95vh;
 	position: absolute;
 	margin: auto;
 	top: 0;
@@ -10,37 +19,47 @@
 }
 
 .child_div1 {
-	width: calc(700px * 1.15);
-	height: calc(700px * 1.15);
+	width: var(--major-height);
+	height: var(--major-height));
+	max-width: 95vh;
+	max-height: 95vh;
 	float: left;
 }
 
 .canvas_container {
-	width: calc(695px * 1.15);
-	height: calc(695px * 1.15);
-	border-style: dashed;
+	width: var(--canvas-dim);
+	height: var(--canvas-dim);
+	max-width: 94.321428542vh;
+	max-height: 94.321428542vh;
+	border-style: solid;
+	border-color: #cacaca;
 	border-width: 2px;
 }
 
 .child_div2 {
-	width: calc(300px * 1.15);
-	max-height: calc(700px * 1.15);
+	width: var(--sidebar-width);
+	height: var(--major-height);
+	max-width: 40.714285702vh;
+	max-height: 95vh;
 	float: right;
 	overflow-y: scroll;
 }
 
 .controls_container {
-	width: calc(300px * 1.15);
+	width: var(--sidebar-width);
+	max-width: 40.714285702vh;
 	position: relative;
 }
 
 .child_div2_child_mid {
-	width: calc(300px * 1.15);
+	width: var(--sidebar-width);
+	max-width: 40.714285702vh;
 	height: 30px;
 }
 
 .infotext_container {
-	width: calc(300px * 1.15);
+	width: var(--sidebar-width);
+	max-width: 40.714285702vh;
 }
 
 p.sidebar-text {
