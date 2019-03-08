@@ -337,7 +337,22 @@ function inputtedShowLabels(v) {
 }
 
 function inputtedShowSingletonNodes(v) {
-  restart(shave(graph));
+  if (v) {
+    d3.keys(nodeDegrees).forEach(n => {
+      if (nodeDegrees[n] == 0) {
+        let _n = _.clone(findNode(master_graph, n))
+        _n['x'] = width / 2 + (Math.random() - 0.5) * width/2;
+        _n['y'] = height /2 + (Math.random() - 0.5) * height/2;
+        _n['size'] = controls['Node size by strength'] ? 0 : _n['size']
+        graph['nodes'].push(_n)
+      }
+    })
+  } else if (!v) {
+    graph['nodes'] = graph.nodes.filter(n => {
+      return nodeDegrees[n.id] > 0;
+    })
+  }
+  restart(graph);
   simulation.restart();
 }
 
@@ -346,8 +361,7 @@ function inputtedNodeSizeByStrength(v) {
     graph.nodes.forEach(n => {
       n.size = nodeDegrees[n.id];
     })
-  }
-  if (!v) {
+  } else if (!v) {
     graph.nodes.forEach(n => {
       n.size = findNode(master_graph, n).size || 1;
     })
@@ -411,11 +425,11 @@ function inputtedZoom(v) {
 }
 
 var vMinPrev = 0;
-var dv = 0;
+var dvMin = 0;
 function inputtedMinLinkWeight(v) {
-  dv = v - vMinPrev
+  dvMin = v - vMinPrev
   if (shiftDown) {
-    controls['Max. link weight %'] = d3.min([100, controls['Max. link weight %'] + dv])
+    controls['Max. link weight %'] = d3.min([100, controls['Max. link weight %'] + dvMin])
   } else {
     controls['Max. link weight %'] = d3.max([controls['Max. link weight %'], v+1])
   }
@@ -423,11 +437,12 @@ function inputtedMinLinkWeight(v) {
   restart(shave(graph));
 }
 
-var vMaxPrev = 0
+var vMaxPrev = 100;
+var dvMax = 0;
 function inputtedMaxLinkWeight(v) {
+  dvMax = v - vMaxPrev
   if (shiftDown) {
-    var dv = v - vMaxPrev
-    controls['Min. link weight %'] = d3.max([0, controls['Min. link weight %'] + dv])
+    controls['Min. link weight %'] = d3.max([0, controls['Min. link weight %'] + dvMax])
   } else {
     controls['Min. link weight %'] = d3.min([controls['Min. link weight %'], v-1])
   }
@@ -602,18 +617,9 @@ function restart_if_valid_CSV(raw_input) {
 // -----------------
 
 function findNode(_graph, n) {
-  // First just check if its at the same index
-  if (n.hasOwnProperty('index')) {
-    if (_graph.nodes[n.index].id == n.id) {
-      return _graph.nodes[n.index]
-    }
-  }
-  // And if it's not, loop through to look for it
-  else {
-    for (let _n of _graph.nodes) {
-      if (_n.id == (n.id || n)) {
-        return _n;
-      }
+  for (let _n of _graph.nodes) {
+    if (_n.id == (n.id || n)) {
+      return _n;
     }
   }
   return undefined;
@@ -686,8 +692,8 @@ function shave(shaveGraph) {
     return percent / 100 * (max_link_width - min_link_width) + min_link_width
   }
 
-  // SLIDER MOVES RIGHT
-  if (dv > 0) {
+  // MIN SLIDER MOVES RIGHT or MAX SLIDER MOVES LEFT
+  if (dvMin > 0 || dvMax < 0) {
     // Remove links and update `nodeDegrees
     shaveGraph['links'] = shaveGraph.links.filter(l => {
       var keepLink = (interval_range(controls['Min. link weight %']) <= l.weight) && (l.weight <= interval_range(controls['Max. link weight %']))
@@ -713,8 +719,8 @@ function shave(shaveGraph) {
     }
   }
 
-  // SLIDER MOVES LEFT
-  else if (dv < 0) {
+  // MIN SLIDER MOVES LEFT or MAX SLIDER MOVES RIGHT
+  else if (dvMin < 0  || dvMax > 0) {
     master_graph.links.forEach(l => {
       // If it's not already in the active graph
       if (findLink(shaveGraph, l) == undefined) {
