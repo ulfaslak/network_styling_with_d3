@@ -556,8 +556,16 @@ function restartIfValidJSON(masterGraph) {
   // Reference graph (is never changed)
   window.masterGraph = masterGraph
 
+  // Size and weight norms, colors and degrees
+  computeMasterGraphGlobals();
+
   // Active graph that d3 operates on
   window.graph = _.cloneDeep(masterGraph)
+
+  // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
+  if (controls['Node size by strength']) {
+    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+  }
 
   // Container for part of the network which are not in `graph` (for faster thresholding)
   window.negativeGraph = {'nodes': [], 'links': []}
@@ -565,9 +573,6 @@ function restartIfValidJSON(masterGraph) {
   // Reset all thresholds ...
   controls["Min. link weight %"] = 0
   controls["Max. link weight %"] = 100
-
-  // Size and weight norms, colors and degrees
-  computeMasterGraphGlobals();
 
   // Run the restart if all of this was OK
   restart();
@@ -602,8 +607,16 @@ function restartIfValidCSV(rawInput) {
     'links': links
   }
 
+  // Size and weight norms, colors and degrees
+  computeMasterGraphGlobals();
+
   // Active graph that d3 operates on
   window.graph = _.cloneDeep(masterGraph)
+
+  // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
+  if (controls['Node size by strength']) {
+    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+  }
 
   // Container for part of the network which are not in `graph` (for faster thresholding)
   window.negativeGraph = {'nodes': [], 'links': []}
@@ -611,9 +624,6 @@ function restartIfValidCSV(rawInput) {
   // Reset all thresholds ...
   controls["Min. link weight %"] = 0
   controls["Max. link weight %"] = 100
-
-  // Size and weight norms, colors and degrees
-  computeMasterGraphGlobals();
 
   restart();
 }
