@@ -366,7 +366,7 @@ function inputtedNodeSizeByStrength(v) {
       n.size = findNode(master_graph, n).size || 1;
     })
   }
-  recompute_size_norms(graph)
+  recompute_size_norms(master_graph)
   simulation.restart();
 }
 
@@ -392,11 +392,7 @@ function inputtedNodeStrokeSize(v) {
 }
 
 function inputtedNodeSizeExponent(v) {
-  if (controls['Node size exponent'] > 0) {
-    node_size_norm = 1 / max_node_size**(controls['Node size exponent'])
-  } else {
-    node_size_norm = 1 / min_node_size**(controls['Node size exponent'])
-  }
+  node_size_norm = 1 / max_node_size**(controls['Node size exponent'])
   if (controls['Collision']) {
     simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
     simulation.alpha(1).restart();
@@ -569,12 +565,11 @@ function restart_if_valid_JSON(master_graph) {
     swal({text: "Found unexpected link attribute(s): " + Array.from(foreign_links_attributes).join(", "), icon: "warning"})
   }
 
-  // Compute and store global variables
-  compute_master_graph_globals();
-
   // Reset all thresholds ...
   controls["Min. link weight %"] = 0
   controls["Max. link weight %"] = 100
+
+  compute_master_graph_globals();
 
   // Run the restart if all of this was OK
   restart(_.cloneDeep(master_graph));
@@ -636,18 +631,9 @@ function findLink(_graph, l) {
 
 function compute_master_graph_globals() {
 
-  // Compute node size norms
+  // Compute node size and link width norms
   recompute_size_norms(master_graph)
-
-  // Compute link width norms
-  max_link_width = d3.max(master_graph.links.map(l => { if (l.weight) { return l.weight } else return 0; }));
-  min_link_width = d3.min(master_graph.links.map(l => { if (l.weight) { return l.weight } else return 1; }));
-
-  if (controls['Link width exponent'] > 0) {
-    link_width_norm = 1 / max_link_width**(controls['Link width exponent'])
-  } else {
-    link_width_norm = 1 / min_link_width**(controls['Link width exponent'])
-  }
+  recompute_width_norms(master_graph)
 
   // Sort out node colors
   var node_groups = new Set(master_graph.nodes.filter(n => 'group' in n).map(n => {return n.group}))
@@ -672,18 +658,25 @@ function compute_master_graph_globals() {
   nodeDegrees = _.cloneDeep(masterNodeDegrees)
 }
 
-function recompute_size_norms(graph){
+function recompute_size_norms(_graph){
   // Compute node size norms
-  max_node_size = d3.max(graph.nodes.map(n => { if (n.size) { return n.size } else return 0; }));
-  min_node_size = d3.min(graph.nodes.map(n => { if (n.size) { return n.size } else return 1; }));
-
-  if (controls['Node size exponent'] > 0) {
-    node_size_norm = 1 / max_node_size**(controls['Node size exponent'])
+  if (controls['Node size by strength']) {
+    max_node_size = d3.max(d3.values(masterNodeDegrees))
   } else {
-    node_size_norm = 1 / min_node_size**(controls['Node size exponent'])
+    max_node_size = d3.max(_graph.nodes.map(n => n.size || 0));  // Nodes are given size if they don't have size on load
   }
+  node_size_norm = 1 / max_node_size**(controls['Node size exponent'])
 }
 
+function recompute_width_norms(graph) {
+  max_link_width = d3.max(master_graph.links.map(l => l.weight || 0));
+  min_link_width = d3.min(master_graph.links.map(l => l.weight || 1));
+  if (controls['Link width exponent'] > 0) {
+    link_width_norm = 1 / max_link_width**(controls['Link width exponent'])
+  } else {
+    link_width_norm = 1 / min_link_width**(controls['Link width exponent'])
+  }
+}
 
 
 function shave(shaveGraph) {
@@ -755,11 +748,6 @@ function shave(shaveGraph) {
     }
   }
 
-  if (controls['Node size by degree']) {
-    shaveGraph.nodes.map(n => {
-      n.size = newNodeDegrees[n.id];
-    })
-  }
   return shaveGraph
 }
 
