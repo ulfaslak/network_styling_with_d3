@@ -115,6 +115,7 @@ var f1 = gui.addFolder('Input/output'); f1.open();
 f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handleURL(v) });
 f1.add(controls, 'Upload file (csv or json)')
 f1.add(controls, 'Download figure');
+f1.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) });
 
 var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
@@ -124,25 +125,26 @@ f2.add(controls, 'Link strength exponent', 0., 1).onChange(function(v) { inputte
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
 f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
 
-var f3 = gui.addFolder('Styling'); f3.open();
+var f3 = gui.addFolder('Nodes'); f3.open();
 f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
 f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
-f3.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
 f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) });
 f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) });
-f3.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) });
 f3.add(controls, 'Node size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) });
-f3.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) });
-f3.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
 f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
 f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
 f3.add(controls, 'Node size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) });
-f3.add(controls, 'Link width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) });
-f3.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) });
 
-var f4 = gui.addFolder('Percolation'); f4.close();
-f4.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen();
-f4.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen();
+var f4 = gui.addFolder('Links'); f4.open();
+f4.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
+f4.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) });
+f4.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
+f4.add(controls, 'Link width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) });
+
+var f5 = gui.addFolder('Thresholding'); f5.close();
+f5.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) });
+f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen();
+f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen();
 
 
 // Restart simulation
