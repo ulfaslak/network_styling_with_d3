@@ -54,8 +54,7 @@ function uploadEvent() {
     
     if (file.name.endsWith(".json")) {
       reader.onload = function(e) {
-        var graph = JSON.parse(reader.result);
-        restartIfValidJSON(graph);
+        restartIfValidJSON(JSON.parse(reader.result));
       }
     } else if (file.name.endsWith(".csv")) {
       reader.onload = function(e) {
@@ -146,12 +145,8 @@ f4.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMin
 f4.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen();
 
 
-
-// Restart simulation. Only used when reloading data
-function restart(graph) {
-
-  // Make `graph` a window variable that the user can access
-  window.graph = graph;
+// Restart simulation
+function restart() {
 
   // Start simulation
   simulation
@@ -202,7 +197,6 @@ function dragstarted() {
   d3.event.subject.fx = d3.event.subject.x;
   d3.event.subject.fy = d3.event.subject.y;
 }
-
 
 function dragged() {
   d3.event.subject.fx = zoomScaler.invert(event.clientX - canvasOffsetX);
@@ -338,33 +332,26 @@ function inputtedShowLabels(v) {
 
 function inputtedShowSingletonNodes(v) {
   if (v) {
-    d3.keys(nodeDegrees).forEach(n => {
-      if (nodeDegrees[n] == 0) {
-        let _n = _.clone(findNode(masterGraph, n))
-        _n['x'] = width / 2 + (Math.random() - 0.5) * width/2;
-        _n['y'] = height /2 + (Math.random() - 0.5) * height/2;
-        _n['size'] = controls['Node size by strength'] ? 0 : _n['size']
-        graph['nodes'].push(_n)
-      }
-    })
+    graph['nodes'].push(...negativeGraph.nodes)
+    negativeGraph['nodes'] = []
   } else if (!v) {
     graph['nodes'] = graph.nodes.filter(n => {
-      return nodeDegrees[n.id] > 0;
+      var keepNode = nodeDegrees[n.id] > 0
+      if (!keepNode) negativeGraph['nodes'].push(n);
+      return keepNode;
     })
   }
-  restart(graph);
+  restart();
   simulation.restart();
 }
 
 function inputtedNodeSizeByStrength(v) {
   if (v) {
-    graph.nodes.forEach(n => {
-      n.size = nodeDegrees[n.id];
-    })
+    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+    negativeGraph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
   } else if (!v) {
-    graph.nodes.forEach(n => {
-      n.size = findNode(masterGraph, n).size || 1;
-    })
+    graph.nodes.forEach(n => { n.size = findNode(masterGraph, n).size || 1 })
+    negativeGraph.nodes.forEach(n => { n.size = findNode(masterGraph, n).size || 1 })
   }
   recomputeSizeNorms()
   simulation.restart();
@@ -429,8 +416,10 @@ function inputtedMinLinkWeight(v) {
   } else {
     controls['Max. link weight %'] = d3.max([controls['Max. link weight %'], v+1])
   }
+  dvMax = controls['Max. link weight %'] - vMaxPrev
   vMinPrev = v
-  restart(shave(graph));
+  vMaxPrev = controls['Max. link weight %']
+  shave(); restart();
 }
 
 var vMaxPrev = 100;
@@ -442,8 +431,10 @@ function inputtedMaxLinkWeight(v) {
   } else {
     controls['Min. link weight %'] = d3.min([controls['Min. link weight %'], v-1])
   }
+  dvMin = controls['Min. link weight %'] - vMinPrev
+  vMinPrev = controls['Min. link weight %']
   vMaxPrev = v
-  restart(shave(graph));
+  shave(); restart();
 }
 
 
@@ -451,12 +442,12 @@ function inputtedMaxLinkWeight(v) {
 // -----------------
 function handleURL() {
   if (controls['Path to file (csv or json)'].endsWith(".json")) {
-    d3.json(controls['Path to file (csv or json)'], function(error, graph) {
+    d3.json(controls['Path to file (csv or json)'], function(error, _graph) {
       if (error) {
         swal({text: "File not found", icon: "error"})
         return false
       }
-      restartIfValidJSON(graph);
+      restartIfValidJSON(_graph);
     })
   } else if (controls['Path to file (csv or json)'].endsWith(".csv")) {
     try {
@@ -470,9 +461,6 @@ function handleURL() {
 
 
 function restartIfValidJSON(masterGraph) {
-
-  // Make masterGraph window accessible
-  window.masterGraph = masterGraph
 
   // Check for 'nodes' and 'links' lists
   if (!masterGraph.nodes || masterGraph.nodes.length == 0) {
@@ -565,14 +553,24 @@ function restartIfValidJSON(masterGraph) {
     swal({text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), icon: "warning"})
   }
 
+  // Reference graph (is never changed)
+  window.masterGraph = masterGraph
+
+  // Active graph that d3 operates on
+  window.graph = _.cloneDeep(masterGraph)
+
+  // Container for part of the network which are not in `graph` (for faster thresholding)
+  window.negativeGraph = {'nodes': [], 'links': []}
+
   // Reset all thresholds ...
   controls["Min. link weight %"] = 0
   controls["Max. link weight %"] = 100
 
+  // Size and weight norms, colors and degrees
   computeMasterGraphGlobals();
 
   // Run the restart if all of this was OK
-  restart(_.cloneDeep(masterGraph));
+  restart();
 }
 
 
@@ -598,14 +596,26 @@ function restartIfValidCSV(rawInput) {
     swal({text: "Removed " + zeroLinksCount + " links with weight 0", icon: "warning"})
   }
 
-  window.masterGraph = {'nodes': [], 'links': links}
-  nodes.forEach(n => {masterGraph.nodes.push({'id': n, 'size': 1})})
+  // Reference graph (is never changed)
+  window.masterGraph = {
+    'nodes': Array.from(nodes).map(n => {return {'id': n, 'size': 1}}),
+    'links': links
+  }
 
-  // Compute and store global variables
+  // Active graph that d3 operates on
+  window.graph = _.cloneDeep(masterGraph)
+
+  // Container for part of the network which are not in `graph` (for faster thresholding)
+  window.negativeGraph = {'nodes': [], 'links': []}
+
+  // Reset all thresholds ...
+  controls["Min. link weight %"] = 0
+  controls["Max. link weight %"] = 100
+
+  // Size and weight norms, colors and degrees
   computeMasterGraphGlobals();
 
-  // Input graph that respects user input percolation boundaries (that's the purpose of using `shave` here)
-  restart(_.cloneDeep(masterGraph));
+  restart();
 }
 
 // Various utilities
@@ -679,7 +689,7 @@ function recomputeWidthNorms() {
 }
 
 
-function shave(shaveGraph) {
+function shave() {
   // Compute what number a percentage corresponds to
   var intervalRange = function(percent) {
     return percent / 100 * (maxLinkWidth - minLinkWidth) + minLinkWidth
@@ -687,68 +697,68 @@ function shave(shaveGraph) {
 
   // MIN SLIDER MOVES RIGHT or MAX SLIDER MOVES LEFT
   if (dvMin > 0 || dvMax < 0) {
+
     // Remove links and update `nodeDegrees
-    shaveGraph['links'] = shaveGraph.links.filter(l => {
-      var keepLink = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
-      if (!keepLink) {
+    graph['links'] = graph.links.filter(l => {
+      var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
+      if (!withinThreshold) {
         nodeDegrees[l.source.id] -= l.weight || 1;
         nodeDegrees[l.target.id] -= l.weight || 1;
+        negativeGraph.links.push(l);
       }
-      return keepLink
+      return withinThreshold
     })
 
     // Remove singleton nodes
     if (!controls['Show singleton nodes']) {
-      shaveGraph['nodes'] = shaveGraph.nodes.filter(n => {
-        return nodeDegrees[n.id] > 0;
+      graph['nodes'] = graph.nodes.filter(n => {
+        var keepNode = nodeDegrees[n.id] > 0;
+        if (!keepNode) {
+          negativeGraph.nodes.push(n)
+        }
+        return keepNode;
       })
     }
 
     // Resize nodes
     if (controls['Node size by strength']) {
-      shaveGraph.nodes.forEach(n => {
-        n.size = nodeDegrees[n.id]
-      })
+      graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+      negativeGraph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
     }
   }
 
   // MIN SLIDER MOVES LEFT or MAX SLIDER MOVES RIGHT
-  else if (dvMin < 0  || dvMax > 0) {
-    masterGraph.links.forEach(l => {
-      // If it's not already in the active graph
-      if (findLink(shaveGraph, l) == undefined) {
-        // And it's within the right threshold
-        if ((intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))) {
-          // Increment the nodeDegrees
-          nodeDegrees[l.source] += l.weight || 1;
-          nodeDegrees[l.target] += l.weight || 1;
-          // And add it!
-          shaveGraph['links'].push(_.cloneDeep(l))
-        }
+  if (dvMin < 0  || dvMax > 0) {
+
+    // Add links back and update `nodeDegrees`
+    negativeGraph['links'] = negativeGraph.links.filter(l => {
+      var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
+      if (withinThreshold) {
+        nodeDegrees[l.source.id] += l.weight || 1;
+        nodeDegrees[l.target.id] += l.weight || 1;
+        graph['links'].push(l)
       }
+      return !withinThreshold
     })
 
     // Add nodes back
     if (!controls['Show singleton nodes']) {
-      d3.keys(nodeDegrees).forEach(n => {
-        if (nodeDegrees[n] > 0 && findNode(shaveGraph, n) == undefined) {
-          let _n = _.clone(findNode(masterGraph, n))
-          _n['x'] = width / 2 + (Math.random() - 0.5) * shaveGraph.nodes.length;
-          _n['y'] = height /2 + (Math.random() - 0.5) * shaveGraph.nodes.length;
-          shaveGraph['nodes'].push(_n)
+      negativeGraph['nodes'] = negativeGraph.nodes.filter(n => {
+        var keepNode = nodeDegrees[n.id] > 0;
+        if (keepNode) {
+          graph['nodes'].push(n)
         }
+        return !keepNode;
       })
     }
 
     // Resize nodes
     if (controls['Node size by strength']) {
-      shaveGraph.nodes.forEach(n => {
+      graph.nodes.forEach(n => {
         n.size = nodeDegrees[n.id]
       })
     }
   }
-
-  return shaveGraph
 }
 
 // Utility functions
