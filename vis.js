@@ -712,7 +712,7 @@ function computeMasterGraphGlobals() {
   // Sort out node colors
   var nodeGroups = new Set(masterGraph.nodes.filter(n => 'group' in n).map(n => {return n.group}))
   for (var g of nodeGroups) {
-    if (typeof(g) == "string") {
+    if (validColor(g)) {
       activeSwatch[g] = g
     } else {
       activeSwatch[g] = '#'+Math.floor(Math.random()*16777215).toString(16);
@@ -860,6 +860,21 @@ function toHex(v) {
   var hv = v.toString(16)
   if (hv.length == 1) hv = "0" + hv;
   return hv;
+}
+
+function validColor(stringToTest) {
+    //Alter the following conditions according to your need.
+    if (stringToTest === "") { return false; }
+    if (stringToTest === "inherit") { return false; }
+    if (stringToTest === "transparent") { return false; }
+
+    var image = document.createElement("img");
+    image.style.color = "rgb(0, 0, 0)";
+    image.style.color = stringToTest;
+    if (image.style.color !== "rgb(0, 0, 0)") { return true; }
+    image.style.color = "rgb(255, 255, 255)";
+    image.style.color = stringToTest;
+    return image.style.color !== "rgb(255, 255, 255)";
 }
 
 function clip(val, lower, upper) {
