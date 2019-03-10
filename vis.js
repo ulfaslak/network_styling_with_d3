@@ -298,7 +298,6 @@ function drawText(d) {
 
 logscaler = d3.scaleLog()
 zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
-activeSwatch = {0: controls['Node fill']}
 
 function computeNodeRadii(d) {
   var thisNodeSize = nodeSizeNorm * controls['Node size'];
@@ -346,7 +345,7 @@ function inputtedCollision(v) {
   simulation.alpha(1).restart();
 }
 
-function inputtedReheat(v) {+
+function inputtedReheat(v) {
   simulation.alpha(0.5);
   simulation.alphaTarget(v).restart();
 }
@@ -358,12 +357,10 @@ function inputtedNodeFill(v) {
   window.dg = parseInt(v.slice(3, 5), 16) - parseInt(referenceColor.slice(3, 5), 16)
   window.db = parseInt(v.slice(5, 7), 16) - parseInt(referenceColor.slice(5, 7), 16)
   for (var g of d3.keys(activeSwatch)) {
-    if (!isNaN(+g)) {
-      var r_ = bounceModulus(parseInt(referenceSwatch[g].slice(1, 3), 16) + dr, 0, 255);
-      var g_ = bounceModulus(parseInt(referenceSwatch[g].slice(3, 5), 16) + dg, 0, 255);
-      var b_ = bounceModulus(parseInt(referenceSwatch[g].slice(5, 7), 16) + db, 0, 255);
-      activeSwatch[g] = '#' + toHex(r_) + toHex(g_) + toHex(b_);
-    }
+    var r_ = bounceModulus(parseInt(referenceSwatch[g].slice(1, 3), 16) + dr, 0, 255);
+    var g_ = bounceModulus(parseInt(referenceSwatch[g].slice(3, 5), 16) + dg, 0, 255);
+    var b_ = bounceModulus(parseInt(referenceSwatch[g].slice(5, 7), 16) + db, 0, 255);
+    activeSwatch[g] = '#' + toHex(r_) + toHex(g_) + toHex(b_);
   }
   simulation.restart();
 }
@@ -711,9 +708,10 @@ function computeMasterGraphGlobals() {
 
   // Sort out node colors
   var nodeGroups = new Set(masterGraph.nodes.filter(n => 'group' in n).map(n => {return n.group}))
-  for (var g of nodeGroups) {
+  activeSwatch = {}
+  for (let g of nodeGroups) {
     if (validColor(g)) {
-      activeSwatch[g] = g
+      activeSwatch[g] = getHexColor(g)
     } else {
       activeSwatch[g] = '#'+Math.floor(Math.random()*16777215).toString(16);
     }
@@ -863,18 +861,23 @@ function toHex(v) {
 }
 
 function validColor(stringToTest) {
-    //Alter the following conditions according to your need.
-    if (stringToTest === "") { return false; }
-    if (stringToTest === "inherit") { return false; }
-    if (stringToTest === "transparent") { return false; }
+  // https://stackoverflow.com/a/16994164/3986879
+  var image = document.createElement("img");
+  image.style.color = "rgb(0, 0, 0)";
+  image.style.color = stringToTest;
+  if (image.style.color !== "rgb(0, 0, 0)") { return true; }
+  image.style.color = "rgb(255, 255, 255)";
+  image.style.color = stringToTest;
+  return image.style.color !== "rgb(255, 255, 255)";
+}
 
-    var image = document.createElement("img");
-    image.style.color = "rgb(0, 0, 0)";
-    image.style.color = stringToTest;
-    if (image.style.color !== "rgb(0, 0, 0)") { return true; }
-    image.style.color = "rgb(255, 255, 255)";
-    image.style.color = stringToTest;
-    return image.style.color !== "rgb(255, 255, 255)";
+function getHexColor(colorStr) {
+  /// https://stackoverflow.com/a/24366628/3986879
+  var a = document.createElement('div');
+  a.style.color = colorStr;
+  var colors = window.getComputedStyle( document.body.appendChild(a) ).color.match(/\d+/g).map(function(a){ return parseInt(a,10); });
+  document.body.removeChild(a);
+  return (colors.length >= 3) ? '#' + (((1 << 24) + (colors[0] << 16) + (colors[1] << 8) + colors[2]).toString(16).substr(1)) : false;
 }
 
 function clip(val, lower, upper) {
