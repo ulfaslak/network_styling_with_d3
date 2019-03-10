@@ -103,6 +103,58 @@ var controls = {
   'Max. link weight %': 100
 };
 
+// Hack to enable titles (https://stackoverflow.com/a/29563786/3986879)
+var eachController = function(fnc) {
+  for (var controllerName in dat.controllers) {
+    if (dat.controllers.hasOwnProperty(controllerName)) {
+      fnc(dat.controllers[controllerName]);
+    }
+  }
+}
+
+var setTitle = function(v) {
+  // __li is the root dom element of each controller
+  if (v) {
+    this.__li.setAttribute('title', v);
+  } else {
+    this.__li.removeAttribute('title')
+  }
+  return this;
+};
+
+eachController(function(controller) {
+  if (!controller.prototype.hasOwnProperty('title')) {
+    controller.prototype.title = setTitle;
+  }
+});
+
+// Titles
+var title1_1 = "URL of eligible file in either JSON or CSV format"
+var title1_2 = "Upload a network from your computer in either JSON or CSV format"
+var title1_3 = "Download the network as a PNG image"
+var title1_4 = "Zoom in or out"
+var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
+var title2_2 = "Push the nodes more or less towards the center of the canvas"
+var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
+var title2_4 = "Tweak the link strength scaling function. Increaes to make weak links weaker and strong links stronger and vice versa"
+var title2_5 = "Make it harder for nodes to overlap"
+var title2_5 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
+var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Node fill" will continuously change the color of all groups'
+var title3_2 = "The color of the ring around nodes"
+var title3_3 = "The color of node labels"
+var title3_4 = "Whether to show labels or not"
+var title3_5 = "Rescale the size of each node relative to their strength (weighted degree)"
+var title3_6 = "Change the size of all nodes"
+var title3_7 = "Change the width of the ring around nodes"
+var title3_8 = "Tweak the node size scaling function. Increase to make big nodes bigger and small nodes smaller"
+var title4_1 = "The color of links"
+var title4_2 = "Change the width of all links"
+var title4_3 = "How transparent links should be. Useful in large dense networks"
+var title4_4 = "Tweak the link width scaling function. Increase to make wide links wider and narrow links narrower"
+var title5_1 = "Whether or not to show links that have zero degree"
+var title5_2 = "Lower percentile threshold on link weight"
+var title5_3 = "Upper percentile threshold on link weight"
+
 // Control panel
 var gui = new dat.GUI({ autoPlace: false});
 var customContainer = document.getElementsByClassName('controls_container')[0];
@@ -112,39 +164,39 @@ customContainer.appendChild(gui.domElement);
 gui.remember(controls);
 
 var f1 = gui.addFolder('Input/output'); f1.open();
-f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handleURL(v) });
-f1.add(controls, 'Upload file (csv or json)')
-f1.add(controls, 'Download figure');
-f1.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) });
+f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handleURL(v) }).title(title1_1);
+f1.add(controls, 'Upload file (csv or json)').title(title1_2);
+f1.add(controls, 'Download figure').title(title1_3);
+f1.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) }).title(title1_4);
 
 var f2 = gui.addFolder('Physics'); f2.open();
-f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) });
-f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) });
-f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) });
-f2.add(controls, 'Link strength exponent', 0., 1).onChange(function(v) { inputtedLinkStrengthExponent(v) });
-f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) });
-f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) });
+f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) }).title(title2_1);
+f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) }).title(title2_2);
+f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) }).title(title2_3);
+f2.add(controls, 'Link strength exponent', 0., 1).onChange(function(v) { inputtedLinkStrengthExponent(v) }).title(title2_4);
+f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) }).title(title2_5);
+f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) }).title(title2_5);
 
 var f3 = gui.addFolder('Nodes'); f3.open();
-f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) });
-f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) });
-f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) });
-f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) });
-f3.add(controls, 'Node size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) });
-f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) });
-f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) });
-f3.add(controls, 'Node size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) });
+f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
+f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
+f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) }).title(title3_3);
+f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
+f3.add(controls, 'Node size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
+f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
+f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
+f3.add(controls, 'Node size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
 
 var f4 = gui.addFolder('Links'); f4.open();
-f4.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) });
-f4.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) });
-f4.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) });
-f4.add(controls, 'Link width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) });
+f4.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
+f4.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
+f4.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
+f4.add(controls, 'Link width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
 
 var f5 = gui.addFolder('Thresholding'); f5.close();
-f5.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) });
-f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen();
-f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen();
+f5.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
+f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
+f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
 
 // Restart simulation
