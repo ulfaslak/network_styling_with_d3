@@ -20,22 +20,24 @@ height = canvas.height
 // Retina canvas rendering    
 var devicePixelRatio = window.devicePixelRatio || 1
 d3.select(canvas)
-    .attr("width", width * devicePixelRatio)
-    .attr("height", height * devicePixelRatio)
-    .style("width", width + "px")
-    .style("height", height + "px").node()
+  .attr("width", width * devicePixelRatio)
+  .attr("height", height * devicePixelRatio)
+  .style("width", width + "px")
+  .style("height", height + "px").node()
 context.scale(devicePixelRatio, devicePixelRatio)
 
 // Simulation
 var simulation = d3.forceSimulation()
-    .force("link", d3.forceLink()
-      .id(function(d) { return d.id; })
-      .distance(10)
-    )
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3. forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
-    .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
+  .force("link", d3.forceLink()
+    .id(function(d) { return d.id; })
+    .distance(10)
+    .strength(function(d) { return computeLinkStrength(d); })
+  )
+  .force("charge", d3.forceManyBody())
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collide", d3. forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
+  .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
+
 
 // Download figure function (must be defined before control variables)
 var download = function() {
@@ -88,7 +90,7 @@ var controls = {
   'Node size': 10, 
   'Node stroke size': 0.5,
   'Node size exponent': 0.5,
-  'Link strength exponent': 0.1,
+  'Link strength exponent': 0.0,
   'Link width exponent': 0.5,
   'Collision': false,
   'Node fill': '#16a085',
@@ -308,8 +310,9 @@ function computeNodeRadii(d) {
 }
 
 function computeLinkStrength(d) {
-  var baseStrength = 1 / Math.min(masterNodeDegrees[d.source.id], masterNodeDegrees[d.target.id])
-  return (1 / baseStrength * d.weight / maxLinkWidth)**(controls['Link strength exponent']) * baseStrength
+  var linkStrength = 1 / Math.min(masterNodeDegrees[d.source.id], masterNodeDegrees[d.target.id])
+  var adjustedStrength = (1 / linkStrength * d.weight / maxLinkWeight)**(controls['Link strength exponent']) * linkStrength
+  return adjustedStrength
 }
 
 function computeNodeColor(d) {
@@ -387,7 +390,7 @@ function inputtedShowSingletonNodes(v) {
     negativeGraph['nodes'] = []
   } else if (!v) {
     graph['nodes'] = graph.nodes.filter(n => {
-      var keepNode = nodeDegrees[n.id] > 0
+      var keepNode = nodeStrengths[n.id] > 0
       if (!keepNode) negativeGraph['nodes'].push(n);
       return keepNode;
     })
@@ -398,13 +401,13 @@ function inputtedShowSingletonNodes(v) {
 
 function inputtedNodeSizeByStrength(v) {
   if (v) {
-    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
-    negativeGraph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+    graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+    negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
   } else if (!v) {
     graph.nodes.forEach(n => { n.size = findNode(masterGraph, n).size || 1 })
     negativeGraph.nodes.forEach(n => { n.size = findNode(masterGraph, n).size || 1 })
   }
-  recomputeSizeNorms()
+  recomputeNodeNorms()
   simulation.restart();
 }
 
@@ -440,15 +443,12 @@ function inputtedNodeSizeExponent(v) {
 }
 
 function inputtedLinkWidthExponent(v) {
-  if (controls['Link width exponent'] > 0) {
-    linkWidthNorm = 1 / maxLinkWidth**(controls['Link width exponent'])
-  } else {
-    linkWidthNorm = 1 / minLinkWidth**(controls['Link width exponent'])
-  }
+  linkWidthNorm = 1 / maxLinkWeight**(controls['Link width exponent'])
   simulation.restart();
 }
 
 function inputtedLinkStrengthExponent(v) {
+  linkStrengthNorm = 1 / maxLinkWeight**(controls['Link strength exponent'])
   simulation.force("link").strength(function(d) { return computeLinkStrength(d); });
   simulation.alpha(1).restart();
 }
@@ -615,7 +615,7 @@ function restartIfValidJSON(masterGraph) {
 
   // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
   if (controls['Node size by strength']) {
-    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+    graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
   }
 
   // Container for part of the network which are not in `graph` (for faster thresholding)
@@ -666,7 +666,7 @@ function restartIfValidCSV(rawInput) {
 
   // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
   if (controls['Node size by strength']) {
-    graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+    graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
   }
 
   // Container for part of the network which are not in `graph` (for faster thresholding)
@@ -702,10 +702,6 @@ function findLink(_graph, l) {
 
 function computeMasterGraphGlobals() {
 
-  // Compute node size and link width norms
-  recomputeSizeNorms()
-  recomputeWidthNorms()
-
   // Sort out node colors
   var nodeGroups = new Set(masterGraph.nodes.filter(n => 'group' in n).map(n => {return n.group}))
   activeSwatch = {}
@@ -720,52 +716,58 @@ function computeMasterGraphGlobals() {
   referenceColor = controls['Node fill']
 
   // Immutable node degree (unless strength is toggled)
+  masterNodeStrengths = {}; masterGraph.nodes.map(n => masterNodeStrengths[n.id] = 0)
   masterNodeDegrees = {}; masterGraph.nodes.map(n => masterNodeDegrees[n.id] = 0)
   masterGraph.links.forEach(l => {
-    masterNodeDegrees[l.source] += l.weight || 1;
-    masterNodeDegrees[l.target] += l.weight || 1;
+    masterNodeStrengths[l.source] += l.weight || 1;
+    masterNodeStrengths[l.target] += l.weight || 1;
+    masterNodeDegrees[l.source] += 1;
+    masterNodeDegrees[l.target] += 1;
   });
 
   // Degree dicrionary to keep track of ACTIVE degrees after thresholds are applied
-  nodeDegrees = _.cloneDeep(masterNodeDegrees)
+  nodeStrengths = _.cloneDeep(masterNodeStrengths)
+
+  // Compute node size and link width norms
+  recomputeNodeNorms()
+  recomputeLinkNorms()
 }
 
-function recomputeSizeNorms(){
+function recomputeNodeNorms(){
   // Compute node size norms
   if (controls['Node size by strength']) {
-    maxNodeSize = d3.max(d3.values(masterNodeDegrees))
+    maxNodeSize = d3.max(d3.values(masterNodeStrengths))
   } else {
     maxNodeSize = d3.max(masterGraph.nodes.map(n => n.size || 0));  // Nodes are given size if they don't have size on load
   }
   nodeSizeNorm = 1 / maxNodeSize**(controls['Node size exponent'])
 }
 
-function recomputeWidthNorms() {
-  maxLinkWidth = d3.max(masterGraph.links.map(l => l.weight || 0));
-  minLinkWidth = d3.min(masterGraph.links.map(l => l.weight || 1));
-  if (controls['Link width exponent'] > 0) {
-    linkWidthNorm = 1 / maxLinkWidth**(controls['Link width exponent'])
-  } else {
-    linkWidthNorm = 1 / minLinkWidth**(controls['Link width exponent'])
-  }
+function recomputeLinkNorms() {
+  maxLinkWeight = d3.max(masterGraph.links.map(l => l.weight || 0));
+  minLinkWeight = d3.min(masterGraph.links.map(l => l.weight || 1));
+  maxLinkStrength = d3.max(masterGraph.links.map(l => 1 / Math.min(masterNodeStrengths[l.source.id], masterNodeStrengths[l.target.id])))
+  minLinkStrength = d3.min(masterGraph.links.map(l => 1 / Math.min(masterNodeStrengths[l.source.id], masterNodeStrengths[l.target.id])))
+  linkWidthNorm = 1 / maxLinkWeight**(controls['Link width exponent'])
+  linkStrengthNorm = 1 / maxLinkStrength**(controls['Link strength exponent'])
 }
 
 
 function shave() {
   // Compute what number a percentage corresponds to
   var intervalRange = function(percent) {
-    return percent / 100 * (maxLinkWidth - minLinkWidth) + minLinkWidth
+    return percent / 100 * (maxLinkWeight - minLinkWeight) + minLinkWeight
   }
 
   // MIN SLIDER MOVES RIGHT or MAX SLIDER MOVES LEFT
   if (dvMin > 0 || dvMax < 0) {
 
-    // Remove links and update `nodeDegrees
+    // Remove links and update `nodeStrengths
     graph['links'] = graph.links.filter(l => {
       var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
       if (!withinThreshold) {
-        nodeDegrees[l.source.id] -= l.weight || 1;
-        nodeDegrees[l.target.id] -= l.weight || 1;
+        nodeStrengths[l.source.id] -= l.weight || 1;
+        nodeStrengths[l.target.id] -= l.weight || 1;
         negativeGraph.links.push(l);
       }
       return withinThreshold
@@ -774,7 +776,7 @@ function shave() {
     // Remove singleton nodes
     if (!controls['Show singleton nodes']) {
       graph['nodes'] = graph.nodes.filter(n => {
-        var keepNode = nodeDegrees[n.id] > 0;
+        var keepNode = nodeStrengths[n.id] > 0;
         if (!keepNode) {
           negativeGraph.nodes.push(n)
         }
@@ -784,20 +786,20 @@ function shave() {
 
     // Resize nodes
     if (controls['Node size by strength']) {
-      graph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
-      negativeGraph.nodes.forEach(n => { n.size = nodeDegrees[n.id] })
+      graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+      negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
   }
 
   // MIN SLIDER MOVES LEFT or MAX SLIDER MOVES RIGHT
   if (dvMin < 0  || dvMax > 0) {
 
-    // Add links back and update `nodeDegrees`
+    // Add links back and update `nodeStrengths`
     negativeGraph['links'] = negativeGraph.links.filter(l => {
       var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
       if (withinThreshold) {
-        nodeDegrees[l.source.id] += l.weight || 1;
-        nodeDegrees[l.target.id] += l.weight || 1;
+        nodeStrengths[l.source.id] += l.weight || 1;
+        nodeStrengths[l.target.id] += l.weight || 1;
         graph['links'].push(l)
       }
       return !withinThreshold
@@ -806,7 +808,7 @@ function shave() {
     // Add nodes back
     if (!controls['Show singleton nodes']) {
       negativeGraph['nodes'] = negativeGraph.nodes.filter(n => {
-        var keepNode = nodeDegrees[n.id] > 0;
+        var keepNode = nodeStrengths[n.id] > 0;
         if (keepNode) {
           graph['nodes'].push(n)
         }
@@ -817,7 +819,7 @@ function shave() {
     // Resize nodes
     if (controls['Node size by strength']) {
       graph.nodes.forEach(n => {
-        n.size = nodeDegrees[n.id]
+        n.size = nodeStrengths[n.id]
       })
     }
   }
