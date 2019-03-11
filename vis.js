@@ -31,7 +31,6 @@ var simulation = d3.forceSimulation()
   .force("link", d3.forceLink()
     .id(function(d) { return d.id; })
     .distance(10)
-    .strength(function(d) { return computeLinkStrength(d); })
   )
   .force("charge", d3.forceManyBody())
   .force("center", d3.forceCenter(width / 2, height / 2))
@@ -90,7 +89,6 @@ var controls = {
   'Node size': 10, 
   'Node stroke size': 0.5,
   'Node size exponent': 0.5,
-  'Link strength exponent': 0.0,
   'Link width exponent': 0.5,
   'Collision': false,
   'Node fill': '#16a085',
@@ -138,7 +136,6 @@ var title1_4 = "Zoom in or out"
 var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
 var title2_2 = "Push the nodes more or less towards the center of the canvas"
 var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
-var title2_4 = "Tweak the link strength scaling function. Increaes to make weak links weaker and strong links stronger and vice versa"
 var title2_5 = "Make it harder for nodes to overlap"
 var title2_5 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
 var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Node fill" will continuously change the color of all groups'
@@ -175,7 +172,6 @@ var f2 = gui.addFolder('Physics'); f2.open();
 f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) }).title(title2_1);
 f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) }).title(title2_2);
 f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) }).title(title2_3);
-f2.add(controls, 'Link strength exponent', 0., 1).onChange(function(v) { inputtedLinkStrengthExponent(v) }).title(title2_4);
 f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) }).title(title2_5);
 f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) }).title(title2_5);
 
@@ -309,12 +305,6 @@ function computeNodeRadii(d) {
   return thisNodeSize
 }
 
-function computeLinkStrength(d) {
-  var linkStrength = 1 / Math.min(masterNodeDegrees[d.source.id], masterNodeDegrees[d.target.id])
-  var adjustedStrength = (1 / linkStrength * d.weight / maxLinkWeight)**(controls['Link strength exponent']) * linkStrength
-  return adjustedStrength
-}
-
 function computeNodeColor(d) {
   if (d.group) {
     return activeSwatch[d.group]
@@ -445,12 +435,6 @@ function inputtedNodeSizeExponent(v) {
 function inputtedLinkWidthExponent(v) {
   linkWidthNorm = 1 / maxLinkWeight**(controls['Link width exponent'])
   simulation.restart();
-}
-
-function inputtedLinkStrengthExponent(v) {
-  linkStrengthNorm = 1 / maxLinkWeight**(controls['Link strength exponent'])
-  simulation.force("link").strength(function(d) { return computeLinkStrength(d); });
-  simulation.alpha(1).restart();
 }
 
 function inputtedZoom(v) {
@@ -746,10 +730,7 @@ function recomputeNodeNorms(){
 function recomputeLinkNorms() {
   maxLinkWeight = d3.max(masterGraph.links.map(l => l.weight || 0));
   minLinkWeight = d3.min(masterGraph.links.map(l => l.weight || 1));
-  maxLinkStrength = d3.max(masterGraph.links.map(l => 1 / Math.min(masterNodeStrengths[l.source.id], masterNodeStrengths[l.target.id])))
-  minLinkStrength = d3.min(masterGraph.links.map(l => 1 / Math.min(masterNodeStrengths[l.source.id], masterNodeStrengths[l.target.id])))
   linkWidthNorm = 1 / maxLinkWeight**(controls['Link width exponent'])
-  linkStrengthNorm = 1 / maxLinkStrength**(controls['Link strength exponent'])
 }
 
 
