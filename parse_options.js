@@ -19,3 +19,7 @@ if ( !((this_config == "null") || (this_config === null)))
         vis(controls);
     });
 }
+else
+{
+        vis({});
+}
