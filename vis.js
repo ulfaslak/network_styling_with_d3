@@ -19,6 +19,9 @@ function vis(new_controls) {
   width = canvas.width;
   height = canvas.height;
 
+  // a dictionary to save all network properties
+  let network_properties = {};
+
   // Retina canvas rendering    
   var devicePixelRatio = window.devicePixelRatio || 1
   d3.select(canvas)
@@ -102,7 +105,8 @@ function vis(new_controls) {
     'Node size by strength': false,
     'Zoom': 1.5,
     'Min. link weight %': 0,
-    'Max. link weight %': 100
+    'Max. link weight %': 100,
+    'Post to Python': post_data,
   };
 
   Reflect.ownKeys(new_controls).forEach(function (key) {
@@ -138,7 +142,8 @@ function vis(new_controls) {
   var title1_1 = "URL of eligible file in either JSON or CSV format"
   var title1_2 = "Upload a network from your computer in either JSON or CSV format"
   var title1_3 = "Download the network as a PNG image"
-  var title1_4 = "Zoom in or out"
+  var title1_4 = "In case the visualization was started from Python, post all calculated node and link properties back to Python.";
+  var title1_5 = "Zoom in or out"
   var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
   var title2_2 = "Push the nodes more or less towards the center of the canvas"
   var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
@@ -172,7 +177,8 @@ function vis(new_controls) {
   f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function (v) { handleURL(v) }).title(title1_1);
   f1.add(controls, 'Upload file (csv or json)').title(title1_2);
   f1.add(controls, 'Download figure').title(title1_3);
-  f1.add(controls, 'Zoom', 0.6, 5).onChange(function (v) { inputtedZoom(v) }).title(title1_4);
+  f1.add(controls, 'Post to Python').title(title1_4);
+  f1.add(controls, 'Zoom', 0.6, 5).onChange(function (v) { inputtedZoom(v) }).title(title1_5);
 
   var f2 = gui.addFolder('Physics'); f2.open();
   f2.add(controls, 'Charge strength', -100, 0).onChange(function (v) { inputtedCharge(v) }).title(title2_1);
@@ -202,6 +208,11 @@ function vis(new_controls) {
   f5.add(controls, 'Min. link weight %', 0, 99).onChange(function (v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
   f5.add(controls, 'Max. link weight %', 1, 100).onChange(function (v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
+  function post_data()
+  {
+      let nw_prop = get_network_properties();
+      post_json(nw_prop);
+  }
 
   // Restart simulation
   function restart() {
@@ -223,17 +234,21 @@ function vis(new_controls) {
         .on("end", dragended));
 
     function ticked() {
+
+      // draw
       context.clearRect(0, 0, width, height);
       context.strokeStyle = controls['Link stroke'];
       context.globalAlpha = controls['Link alpha'];
-      context.globalCompositeOperation = "destination-over"
+      context.globalCompositeOperation = "destination-over";
       graph.links.forEach(drawLink);
       context.globalAlpha = 1.0
       context.strokeStyle = controls['Node stroke'];
       context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
-      context.globalCompositeOperation = "source-over"
+      context.globalCompositeOperation = "source-over";
       graph.nodes.forEach(drawNode);
       graph.nodes.forEach(drawText);
+
+      return network_properties;
     }
 
     simulation.alpha(1).restart();
@@ -241,7 +256,6 @@ function vis(new_controls) {
 
   handleURL(controls['Path to file (csv or json)']);
   uploadEvent();
-
 
   // Network functions
   // -----------------
@@ -950,4 +964,35 @@ function vis(new_controls) {
     }
   }, true)
 
+
+  // Get a JSON object containing all the drawn properties for replication
+  function get_network_properties()
+  {
+      // save all those things we wish to draw to a dict;
+      let network_properties = {};
+      network_properties.width = width;
+      network_properties.height = height;
+      network_properties.linkColor = controls['Link stroke'];
+      network_properties.linkAlpha = controls['Link alpha'];
+      network_properties.nodeStrokeColor = controls['Node stroke'];
+      network_properties.nodeStrokeWidth = controls['Node stroke size'];
+      network_properties.links = [];
+      network_properties.nodes = [];
+
+      graph.links.forEach(function(d){
+          let thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) 
+                              * linkWidthNorm 
+                              * controls['Link width'];
+          network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
+      });
+      graph.nodes.forEach(function(d){
+          let thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) 
+                              * nodeSizeNorm 
+                              * controls['Node size'];
+          network_properties.nodes.push({ id: d.id, pos: [d.x, d.y], 
+                                          radius: thisNodeSize, color : computeNodeColor(d) });
+      });
+
+      return network_properties;
+  }
 }
