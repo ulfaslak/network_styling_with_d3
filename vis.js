@@ -19,9 +19,6 @@ function vis(new_controls) {
   width = canvas.width;
   height = canvas.height;
 
-  // a dictionary to save all network properties
-  let network_properties = {};
-
   // Retina canvas rendering    
   var devicePixelRatio = window.devicePixelRatio || 1
   d3.select(canvas)
@@ -247,8 +244,6 @@ function vis(new_controls) {
       context.globalCompositeOperation = "source-over";
       graph.nodes.forEach(drawNode);
       graph.nodes.forEach(drawText);
-
-      return network_properties;
     }
 
     simulation.alpha(1).restart();
