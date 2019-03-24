@@ -4,7 +4,7 @@
 // Canvas
 //
 function vis(new_controls) {
-  canvas = document.querySelector("canvas");
+  var canvas = document.querySelector("canvas");
   var parentdiv = document.getElementsByClassName("canvas_container")[0];
   canvas.width = parentdiv.offsetWidth;
   canvas.height = parentdiv.offsetHeight;
@@ -15,9 +15,10 @@ function vis(new_controls) {
   }
   window.onresize()
 
-  context = canvas.getContext("2d");
-  width = canvas.width;
-  height = canvas.height;
+  let maxNodeSize, maxLinkWeight, activeSwatch;
+  let context = canvas.getContext("2d");
+  let width = canvas.width;
+  let height = canvas.height;
 
   // Retina canvas rendering    
   var devicePixelRatio = window.devicePixelRatio || 1
@@ -105,6 +106,8 @@ function vis(new_controls) {
     'Max. link weight %': 100,
     'Post to Python': post_data,
   };
+  let referenceColor = controls['Node fill'];
+    
 
   Reflect.ownKeys(new_controls).forEach(function (key) {
     controls[key] = new_controls[key];
@@ -703,16 +706,15 @@ function vis(new_controls) {
 
     // Sort out node colors
     var nodeGroups = new Set(masterGraph.nodes.filter(n => 'group' in n).map(n => { return n.group }))
-    activeSwatch = {}
+    activeSwatch = {};
     for (let g of nodeGroups) {
       if (validColor(g)) {
-        activeSwatch[g] = getHexColor(g)
+        activeSwatch[g] = getHexColor(g);
       } else {
         activeSwatch[g] = '#' + Math.floor(Math.random() * 16777215).toString(16);
       }
     }
     window.referenceSwatch = _.cloneDeep(activeSwatch)
-    referenceColor = controls['Node fill']
 
     // Immutable node degree (unless strength is toggled)
     masterNodeStrengths = {}; masterGraph.nodes.map(n => masterNodeStrengths[n.id] = 0)
@@ -936,6 +938,7 @@ function vis(new_controls) {
 
   var hoveredNode;
   var selectedNodes = [];
+    console.log(selectedNodes);
   var xy;
   d3.select(canvas).on("mousemove", function () {
     if (!controls['Show labels']) {
