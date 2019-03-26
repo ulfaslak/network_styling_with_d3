@@ -211,7 +211,61 @@ function vis(new_controls) {
   function post_data()
   {
       let nw_prop = get_network_properties();
-      post_json(nw_prop);
+      let controls_copy = {};
+      for (let prop in controls) 
+      {
+        if (
+            (controls.hasOwnProperty(prop))
+            &&
+            (prop != 'Post to Python')
+            &&
+            (prop != 'Download figure')
+            &&
+            (prop != 'Path to file (csv or json)')
+            &&
+            (prop != 'Upload file (csv or json)')
+           )
+        {
+          controls_copy[prop] = controls[prop];
+        }
+      }
+
+      post_json(nw_prop, controls_copy, function(){
+          swal({
+              //icon: "success",
+              text: "Success! Closing in 3 seconds.",
+              icon: "success",
+              timer: 3000,
+              buttons: {
+                     // I know this is all mixed up but it's
+                     // apparently the only way to tell swal
+                     // to do the same thing when "Ok" is pressed
+                     // OR the time ran out
+                      cancel: {
+                        text: "Ok",
+                        value: false,
+                        visible: true,
+                        className: "",
+                        closeModal: true,
+                      },
+                      confirm: {
+                        text: "Cancel",
+                        value: true,
+                        visible: true,
+                        className: "",
+                        closeModal: true
+                      }
+                    }
+
+            }).then((willDelete) => {
+                if (willDelete) {
+                }
+                else
+                {
+                    post_stop();
+                }
+            });
+      });
   }
 
   // Restart simulation
@@ -938,7 +992,6 @@ function vis(new_controls) {
 
   var hoveredNode;
   var selectedNodes = [];
-    console.log(selectedNodes);
   var xy;
   d3.select(canvas).on("mousemove", function () {
     if (!controls['Show labels']) {

@@ -67,3 +67,7 @@ p.sidebar-text {
     hyphens: auto;
     text-align: justify;
 }
+
+.swal-text {
+	font-family: 'Open sans', sans-serif; color: #777777; font-size: 14px;
+}
