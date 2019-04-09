@@ -230,7 +230,7 @@ function vis(new_controls) {
         }
       }
 
-      post_json(nw_prop, controls_copy, function(){
+      post_json(nw_prop, controls_copy, canvas, function(){
           swal({
               //icon: "success",
               text: "Success! Closing in 3 seconds.",
@@ -1021,26 +1021,28 @@ function vis(new_controls) {
   {
       // save all those things we wish to draw to a dict;
       let network_properties = {};
-      network_properties.width = width;
-      network_properties.height = height;
+      network_properties.xlim = [ 0, width ];
+      network_properties.ylim = [ 0, height ];
       network_properties.linkColor = controls['Link stroke'];
       network_properties.linkAlpha = controls['Link alpha'];
       network_properties.nodeStrokeColor = controls['Node stroke'];
-      network_properties.nodeStrokeWidth = controls['Node stroke size'];
+      network_properties.nodeStrokeWidth = controls['Node stroke size'] * controls['Zoom'];
       network_properties.links = [];
       network_properties.nodes = [];
 
       graph.links.forEach(function(d){
           let thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) 
                               * linkWidthNorm 
-                              * controls['Link width'];
+                              * controls['Link width']
+                              * controls['Zoom'];
           network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
       });
       graph.nodes.forEach(function(d){
           let thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) 
                               * nodeSizeNorm 
-                              * controls['Node size'];
-          network_properties.nodes.push({ id: d.id, pos: [d.x, d.y], 
+                              * controls['Node size']
+                              * (2*controls['Zoom']-1);
+          network_properties.nodes.push({ id: d.id, pos: [zoomScaler(d.x), height-zoomScaler(d.y)], 
                                           radius: thisNodeSize, color : computeNodeColor(d) });
       });
 
