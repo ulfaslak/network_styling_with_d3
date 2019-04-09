@@ -62,7 +62,7 @@ function uploadEvent() {
         restartIfValidCSV(reader.result)
       }
     } else {
-      swal({text: "File not supported", icon: "error"})
+      swal({text: "File not supported", type: "error"})
       return false
     }
     reader.readAsText(file);
@@ -479,7 +479,7 @@ function handleURL() {
   if (controls['Path to file (csv or json)'].endsWith(".json")) {
     d3.json(controls['Path to file (csv or json)'], function(error, _graph) {
       if (error) {
-        swal({text: "File not found", icon: "error"})
+        swal({text: "File not found", type: "error"})
         return false
       }
       restartIfValidJSON(_graph);
@@ -489,7 +489,7 @@ function handleURL() {
       fetch(controls['Path to file (csv or json)']).then(r => r.text()).then(r => restartIfValidCSV(r));
     } catch(error) {
       throw error;
-      swal({text: "File not found", icon: "error"})
+      swal({text: "File not found", type: "error"})
     }
   }
 }
@@ -499,23 +499,23 @@ function restartIfValidJSON(masterGraph) {
 
   // Check for 'nodes' and 'links' lists
   if (!masterGraph.nodes || masterGraph.nodes.length == 0) {
-    swal({text: "Dataset does not have a key 'nodes'", icon: "error"})
+    swal({text: "Dataset does not have a key 'nodes'", type: "error"})
     return false
   }
   if (!masterGraph.links) {
-    swal({text: "Dataset does not have a key 'links'", icon: "warning"})
+    swal({text: "Dataset does not have a key 'links'", type: "warning"})
   }
 
   // Check that node and link objects are formatted right
   for (var d of masterGraph.nodes) {
     if (!d3.keys(d).includes("id")) {
-      swal({text: "Found objects in 'nodes' without 'id' key.", icon: "error"});
+      swal({text: "Found objects in 'nodes' without 'id' key.", type: "error"});
       return false;
     }
   }
   for (var d of masterGraph.links) {
     if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
-      swal({text: "Found objects in 'links' without 'source' or 'target' key.", icon: "error"});
+      swal({text: "Found objects in 'links' without 'source' or 'target' key.", type: "error"});
       return false;
     }
   }
@@ -530,38 +530,38 @@ function restartIfValidJSON(masterGraph) {
   }); linksNodesSet.delete(undefined)
 
   if (nodesNodesSet.size == 0) {
-    swal({text: "No nodes found.", icon: "error"})
+    swal({text: "No nodes found.", type: "error"})
     return false;
   }
   if (nodesNodes.includes(null)) {
-    swal({text: "Found items in node list without 'id' key.", icon: "error"});
+    swal({text: "Found items in node list without 'id' key.", type: "error"});
     return false;
   }
   if (nodesNodes.length != nodesNodesSet.size) {
-    swal({text: "Found multiple nodes with the same id.", icon: "error"});
+    swal({text: "Found multiple nodes with the same id.", type: "error"});
     return false;
   }
   if (nodesNodesSet.size < linksNodesSet.size) {
-    swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error"});
+    swal({text: "Found nodes referenced in 'links' which are not in 'nodes'.", type: "error"});
     return false;
   }
 
   // Check that attributes are indicated consistently in both nodes and links
   var countWeight = masterGraph.links.filter(n => { return 'weight' in n }).length
   if (0 < countWeight & countWeight < masterGraph.links.length) {
-    swal({text: "Found links with and links without 'weight' attribute", icon: "error"});
+    swal({text: "Found links with and links without 'weight' attribute", type: "error"});
     return false; 
   } else if (countWeight == 0) {
     masterGraph.links.forEach(l => {l.weight = 1;})
   }
   var countGroup = masterGraph.nodes.filter(n => { return 'group' in n }).length
   if (0 < countGroup & countGroup < masterGraph.nodes.length) {
-    swal({text: "Found nodes with and nodes without 'group' attribute", icon: "error"});
+    swal({text: "Found nodes with and nodes without 'group' attribute", type: "error"});
     return false; 
   }
   countSize = masterGraph.nodes.filter(n => { return 'size' in n }).length
   if (0 < countSize & countSize < masterGraph.nodes.length) {
-    swal({text: "Found nodes with and nodes without 'size' attribute", icon: "error"});
+    swal({text: "Found nodes with and nodes without 'size' attribute", type: "error"});
     return false; 
   }
   else if (countSize == 0) {
@@ -582,10 +582,10 @@ function restartIfValidJSON(masterGraph) {
     })
   })
   if (foreignNodesAttributes.size > 0) {
-    swal({text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), icon: "warning"})
+    swal({text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), type: "warning"})
   }
   if (foreignLinksAttributes.size > 0) {
-    swal({text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), icon: "warning"})
+    swal({text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), type: "warning"})
   }
 
   // Reference graph (is never changed)
@@ -633,7 +633,7 @@ function restartIfValidCSV(rawInput) {
   })
 
   if (zeroLinksCount > 0) {
-    swal({text: "Removed " + zeroLinksCount + " links with weight 0", icon: "warning"})
+    swal({text: "Removed " + zeroLinksCount + " links with weight 0", type: "warning"})
   }
 
   // Reference graph (is never changed)
