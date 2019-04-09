@@ -7,7 +7,7 @@ this_url = new URL(this_url);
 var this_data = this_url.searchParams.get("data");
 if (!((this_data == "null") || (this_data === null)))
 {
-    controls['Path to file (csv or json)'] = this_data;
+    controls['Path to file'] = this_data;
 }
 
 var this_config = this_url.searchParams.get("config");

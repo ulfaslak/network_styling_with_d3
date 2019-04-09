@@ -78,10 +78,56 @@ function vis(new_controls) {
     uploadEvent();
   }
 
+  // Post data back to Python event
+  function postData(){
+    let nw_prop = get_network_properties();
+    let controls_copy = {};
+    for (let prop in controls){
+      if (
+        (controls.hasOwnProperty(prop)) &&
+        (prop != 'Post to Python') &&
+        (prop != 'Download figure')
+       ){
+        controls_copy[prop] = controls[prop];
+      }
+    }
+    post_json(nw_prop, controls_copy, canvas, function(){
+      swal({
+        //icon: "success",
+        text: "Success! Closing in 3 seconds.",
+        icon: "success",
+        timer: 3000,
+        buttons: {
+         // I know this is all mixed up but it's apparently the
+         // only way to tell swal to do the same thing when "Ok"
+         // is pressed OR the time ran out
+          cancel: {
+            text: "Ok",
+            value: false,
+            visible: true,
+            className: "",
+            closeModal: true,
+          },
+          confirm: {
+            text: "Cancel",
+            value: true,
+            visible: true,
+            className: "",
+            closeModal: true
+          }
+        }
+      }).then((willDelete) => {
+          if (willDelete) {
+          } else {
+            post_stop();
+          }
+      });
+    });
+  }
+
   // Control variables
   var controls = {
-    'Path to file (csv or json)': "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json",
-    'Upload file (csv or json)': uploadFile,
+    'Path to file': "",
     'Download figure': download,
     'Apply heat (wiggle)': false,
     'Charge strength': -30,
@@ -103,12 +149,24 @@ function vis(new_controls) {
     'Node size by strength': false,
     'Zoom': 1.5,
     'Min. link weight %': 0,
-    'Max. link weight %': 100,
-    'Post to Python': post_data,
+    'Max. link weight %': 100
   };
+
+  var isLocal = window.location['href'].includes("http://localhost");
+  var isWeb = window.location['href'].includes("https://ulfaslak");
+
+  if (isLocal) {
+    console.log("isLocal")
+    controls['Post to Python'] = postData
+  }
+  if (isWeb) {
+    console.log("isWeb")
+    controls['Upload file'] = uploadFile
+    controls['Path to file'] = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json"
+  }
+  
   let referenceColor = controls['Node fill'];
     
-
   Reflect.ownKeys(new_controls).forEach(function(key) {
     controls[key] = new_controls[key];
   });
@@ -174,10 +232,10 @@ function vis(new_controls) {
   gui.remember(controls);
 
   var f1 = gui.addFolder('Input/output'); f1.open();
-  f1.add(controls, 'Path to file (csv or json)', controls['Path to file (csv or json)']).onFinishChange(function(v) { handleURL(v) }).title(title1_1);
-  f1.add(controls, 'Upload file (csv or json)').title(title1_2);
+  if (isWeb) f1.add(controls, 'Path to file', controls['Path to file']).onFinishChange(function(v) { handleURL(v) }).title(title1_1);
+  if (isWeb) f1.add(controls, 'Upload file').title(title1_2);
   f1.add(controls, 'Download figure').title(title1_3);
-  f1.add(controls, 'Post to Python').title(title1_4);
+  if (isLocal) f1.add(controls, 'Post to Python').title(title1_4);
   f1.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) }).title(title1_5);
 
   var f2 = gui.addFolder('Physics'); f2.open();
@@ -207,66 +265,6 @@ function vis(new_controls) {
   f5.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
   f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
   f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
-
-  function post_data()
-  {
-      let nw_prop = get_network_properties();
-      let controls_copy = {};
-      for (let prop in controls) 
-      {
-        if (
-            (controls.hasOwnProperty(prop))
-            &&
-            (prop != 'Post to Python')
-            &&
-            (prop != 'Download figure')
-            &&
-            (prop != 'Path to file (csv or json)')
-            &&
-            (prop != 'Upload file (csv or json)')
-           )
-        {
-          controls_copy[prop] = controls[prop];
-        }
-      }
-
-      post_json(nw_prop, controls_copy, canvas, function(){
-          swal({
-              //icon: "success",
-              text: "Success! Closing in 3 seconds.",
-              icon: "success",
-              timer: 3000,
-              buttons: {
-                     // I know this is all mixed up but it's
-                     // apparently the only way to tell swal
-                     // to do the same thing when "Ok" is pressed
-                     // OR the time ran out
-                      cancel: {
-                        text: "Ok",
-                        value: false,
-                        visible: true,
-                        className: "",
-                        closeModal: true,
-                      },
-                      confirm: {
-                        text: "Cancel",
-                        value: true,
-                        visible: true,
-                        className: "",
-                        closeModal: true
-                      }
-                    }
-
-            }).then((willDelete) => {
-                if (willDelete) {
-                }
-                else
-                {
-                    post_stop();
-                }
-            });
-      });
-  }
 
   // Restart simulation
   function restart() {
@@ -306,7 +304,7 @@ function vis(new_controls) {
     simulation.alpha(1).restart();
   }
 
-  handleURL(controls['Path to file (csv or json)']);
+  handleURL(controls['Path to file']);
   uploadEvent();
 
   // Network functions
@@ -547,17 +545,17 @@ function vis(new_controls) {
   // Handle input data
   // -----------------
   function handleURL() {
-    if (controls['Path to file (csv or json)'].endsWith(".json")) {
-      d3.json(controls['Path to file (csv or json)'], function(error, _graph) {
+    if (controls['Path to file'].endsWith(".json")) {
+      d3.json(controls['Path to file'], function(error, _graph) {
         if (error) {
           swal({ text: "File not found", icon: "error" })
           return false
         }
         restartIfValidJSON(_graph);
       })
-    } else if (controls['Path to file (csv or json)'].endsWith(".csv")) {
+    } else if (controls['Path to file'].endsWith(".csv")) {
       try {
-        fetch(controls['Path to file (csv or json)']).then(r => r.text()).then(r => restartIfValidCSV(r));
+        fetch(controls['Path to file']).then(r => r.text()).then(r => restartIfValidCSV(r));
       } catch (error) {
         throw error;
         swal({ text: "File not found", icon: "error" })
@@ -830,7 +828,7 @@ function vis(new_controls) {
     if (key == 'Zoom') inputtedZoom(v);
   });
 
-  // Control panel	   
+  // Control panel     
 
 
 
