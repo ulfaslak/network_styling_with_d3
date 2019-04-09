@@ -1040,8 +1040,13 @@ function vis(new_controls) {
                               * nodeSizeNorm 
                               * controls['Node size']
                               * (2*controls['Zoom']-1);
-          network_properties.nodes.push({ id: d.id, pos: [zoomScaler(d.x), height-zoomScaler(d.y)], 
-                                          radius: thisNodeSize, color : computeNodeColor(d) });
+          network_properties.nodes.push({
+            id: d.id,
+            x: zoomScaler(d.x),
+            y: height-zoomScaler(d.y), 
+            radius: thisNodeSize,
+            color: computeNodeColor(d)
+          });
       });
 
       return network_properties;
