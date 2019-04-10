@@ -15,11 +15,7 @@ if ( !((this_config == "null") || (this_config === null)))
 {
     d3.json(this_config,function(data){
         Reflect.ownKeys(data).forEach(key => controls[key] = data[key]);
-
-        vis(controls);
     });
 }
-else
-{
-        vis({});
-}
+
+vis(controls);

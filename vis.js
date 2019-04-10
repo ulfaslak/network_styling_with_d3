@@ -162,7 +162,6 @@ function vis(new_controls) {
   if (isWeb) {
     console.log("isWeb")
     controls['Upload file'] = uploadFile
-    controls['Path to file'] = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json"
   }
   
   let referenceColor = controls['Node fill'];
@@ -170,6 +169,10 @@ function vis(new_controls) {
   Reflect.ownKeys(new_controls).forEach(function(key) {
     controls[key] = new_controls[key];
   });
+
+  if (controls['Path to file'] == "") {
+    controls['Path to file'] = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json"
+  }
 
   // Hack to enable titles (https://stackoverflow.com/a/29563786/3986879)
   var eachController = function(fnc) {
