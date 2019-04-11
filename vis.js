@@ -114,28 +114,33 @@ function vis(new_controls) {
 
   // Control variables
   var controls = {
+    // Input/output
     'Path to file': "",
     'Download figure': download,
-    'Wiggle': false,
-    'Freeze': false,
+    'Zoom': 1.5,
+    // Physics
     'Charge strength': -30,
     'Center gravity': 0.1,
     'Link distance': 10,
-    'Link width': 5,
-    'Link alpha': 0.5,
-    'Node size': 10,
-    'Node stroke size': 0.5,
-    'Node size exponent': 0.5,
-    'Link width exponent': 0.5,
     'Collision': false,
-    'Node fill': '#16a085',
-    'Node stroke': '#000000',
-    'Link stroke': '#7c7c7c',
+    'Wiggle': false,
+    'Freeze': false,
+    // Nodes
+    'Fill color': '#16a085',
+    'Ring color': '#000000',
     'Label stroke': '#000000',
     'Show labels': false,
-    'Show singleton nodes': false,
-    'Node size by strength': false,
-    'Zoom': 1.5,
+    'Size by strength': false,
+    'Size': 10,
+    'Stroke size': 0.5,
+    'Size exponent': 0.5,
+    // Links
+    'Color': '#7c7c7c',
+    'Width': 5,
+    'Alpha': 0.5,
+    'Width exponent': 0.5,
+    // Thresholding
+    'Singleton nodes': false,
     'Min. link weight %': 0,
     'Max. link weight %': 100
   };
@@ -152,7 +157,7 @@ function vis(new_controls) {
     controls['Upload file'] = uploadFile
   }
   
-  let referenceColor = controls['Node fill'];
+  let referenceColor = controls['Fill color'];
     
   Reflect.ownKeys(new_controls).forEach(function(key) {
     controls[key] = new_controls[key];
@@ -199,7 +204,7 @@ function vis(new_controls) {
   var title2_5 = "Make it harder for nodes to overlap"
   var title2_6 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
   var title2_7 = "Set force layout algorithm temperature to zero, causing the nodes to freeze in their position."
-  var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Node fill" will continuously change the color of all groups'
+  var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Fill color" will continuously change the color of all groups'
   var title3_2 = "The color of the ring around nodes"
   var title3_3 = "The color of node labels"
   var title3_4 = "Whether to show labels or not"
@@ -239,23 +244,23 @@ function vis(new_controls) {
   f2.add(controls, 'Freeze', false).onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
 
   var f3 = gui.addFolder('Nodes'); f3.open();
-  f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
-  f3.addColor(controls, 'Node stroke', controls['Node stroke']).onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
+  f3.addColor(controls, 'Fill color', controls['Fill color']).onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
+  f3.addColor(controls, 'Ring color', controls['Ring color']).onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
   f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) }).title(title3_3);
   f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
-  f3.add(controls, 'Node size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
-  f3.add(controls, 'Node size', 0, 50).onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
-  f3.add(controls, 'Node stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
-  f3.add(controls, 'Node size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
+  f3.add(controls, 'Size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
+  f3.add(controls, 'Size', 0, 50).onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
+  f3.add(controls, 'Stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
+  f3.add(controls, 'Size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
 
   var f4 = gui.addFolder('Links'); f4.open();
-  f4.addColor(controls, 'Link stroke', controls['Link stroke']).onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
-  f4.add(controls, 'Link width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
-  f4.add(controls, 'Link alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
-  f4.add(controls, 'Link width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
+  f4.addColor(controls, 'Color', controls['Color']).onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
+  f4.add(controls, 'Width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
+  f4.add(controls, 'Alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
+  f4.add(controls, 'Width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
 
   var f5 = gui.addFolder('Thresholding'); f5.close();
-  f5.add(controls, 'Show singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
+  f5.add(controls, 'Singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
   f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
   f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
@@ -282,13 +287,13 @@ function vis(new_controls) {
 
       // draw
       context.clearRect(0, 0, width, height);
-      context.strokeStyle = controls['Link stroke'];
-      context.globalAlpha = controls['Link alpha'];
+      context.strokeStyle = controls['Color'];
+      context.globalAlpha = controls['Alpha'];
       context.globalCompositeOperation = "destination-over";
       graph.links.forEach(drawLink);
       context.globalAlpha = 1.0
-      context.strokeStyle = controls['Node stroke'];
-      context.lineWidth = controls['Node stroke size'] * controls['Zoom'];
+      context.strokeStyle = controls['Ring color'];
+      context.lineWidth = controls['Stroke size'] * controls['Zoom'];
       context.globalCompositeOperation = "source-over";
       graph.nodes.forEach(drawNode);
       graph.nodes.forEach(drawText);
@@ -325,7 +330,7 @@ function vis(new_controls) {
   }
 
   function drawLink(d) {
-    var thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) * linkWidthNorm * controls['Link width'];
+    var thisLinkWidth = (d.weight || 1) ** (controls['Width exponent']) * linkWidthNorm * controls['Width'];
     context.beginPath();
     context.moveTo(zoomScaler(d.source.x), zoomScaler(d.source.y));
     context.lineTo(zoomScaler(d.target.x), zoomScaler(d.target.y));
@@ -335,7 +340,7 @@ function vis(new_controls) {
 
   function drawNode(d) {
     // Node
-    var thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) * nodeSizeNorm * controls['Node size'];
+    var thisNodeSize = (d.size || 1) ** (controls['Size exponent']) * nodeSizeNorm * controls['Size'];
     context.beginPath();
     context.moveTo(zoomScaler(d.x) + thisNodeSize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoomScaler(d.y));
     context.arc(zoomScaler(d.x), zoomScaler(d.y), thisNodeSize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
@@ -346,7 +351,7 @@ function vis(new_controls) {
 
   function drawText(d) {
     if (controls['Show labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
-      var thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) * nodeSizeNorm * controls['Node size'];
+      var thisNodeSize = (d.size || 1) ** (controls['Size exponent']) * nodeSizeNorm * controls['Size'];
       context.font = clip(thisNodeSize * controls['Zoom'] * 2, 10, 20) + "px Helvetica"
       context.fillStyle = controls['Label stroke']
       context.fillText(d.id, zoomScaler(d.x), zoomScaler(d.y))
@@ -361,9 +366,9 @@ function vis(new_controls) {
   zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
 
   function computeNodeRadii(d) {
-    var thisNodeSize = nodeSizeNorm * controls['Node size'];
+    var thisNodeSize = nodeSizeNorm * controls['Size'];
     if (d.size) {
-      thisNodeSize *= (d.size) ** (controls['Node size exponent']);
+      thisNodeSize *= (d.size) ** (controls['Size exponent']);
     }
     return thisNodeSize
   }
@@ -374,7 +379,7 @@ function vis(new_controls) {
     } else if (d.group) {
       return activeSwatch[d.group];
     } else {
-      return controls['Node fill'];
+      return controls['Fill color'];
     }
   }
 
@@ -498,7 +503,7 @@ function vis(new_controls) {
   }
 
   function inputtedNodeSizeExponent(v) {
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['Node size exponent'])
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['Size exponent'])
     if (controls['Collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
       simulation.alpha(1).restart();
@@ -508,7 +513,7 @@ function vis(new_controls) {
   }
 
   function inputtedLinkWidthExponent(v) {
-    linkWidthNorm = 1 / maxLinkWeight ** (controls['Link width exponent'])
+    linkWidthNorm = 1 / maxLinkWeight ** (controls['Width exponent'])
     simulation.restart();
   }
 
@@ -680,8 +685,8 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
-    // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
-    if (controls['Node size by strength']) {
+    // If 'Size by strength' is toggled, then node sizes need to follow computed degrees
+    if (controls['Size by strength']) {
       graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
 
@@ -731,8 +736,8 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
-    // If 'Node size by strength' is toggled, then node sizes need to follow computed degrees
-    if (controls['Node size by strength']) {
+    // If 'Size by strength' is toggled, then node sizes need to follow computed degrees
+    if (controls['Size by strength']) {
       graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
 
@@ -801,18 +806,18 @@ function vis(new_controls) {
 
   function recomputeNodeNorms() {
     // Compute node size norms
-    if (controls['Node size by strength']) {
+    if (controls['Size by strength']) {
       maxNodeSize = d3.max(d3.values(masterNodeStrengths))
     } else {
       maxNodeSize = d3.max(masterGraph.nodes.map(n => n.size || 0));  // Nodes are given size if they don't have size on load
     }
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['Node size exponent'])
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['Size exponent'])
   }
 
   function recomputeLinkNorms() {
     maxLinkWeight = d3.max(masterGraph.links.map(l => l.weight || 0));
     minLinkWeight = d3.min(masterGraph.links.map(l => l.weight || 1));
-    linkWidthNorm = 1 / maxLinkWeight ** (controls['Link width exponent'])
+    linkWidthNorm = 1 / maxLinkWeight ** (controls['Width exponent'])
   }
 
 
@@ -827,17 +832,17 @@ function vis(new_controls) {
     if (key == 'Link strength exponent') inputtedLinkStrengthExponent(v);
     if (key == 'Collision') inputtedCollision(v);
 
-    if (key == 'Node fill') inputtedNodeFill(v);
-    if (key == 'Node stroke') inputtedNodeStroke(v);
-    if (key == 'Link stroke') inputtedLinkStroke(v);
+    if (key == 'Fill color') inputtedNodeFill(v);
+    if (key == 'Ring color') inputtedNodeStroke(v);
+    if (key == 'Color') inputtedLinkStroke(v);
     if (key == 'Label stroke') inputtedTextStroke(v);
     if (key == 'Show labels') inputtedShowLabels(v);
-    if (key == 'Link width') inputtedLinkWidth(v);
-    if (key == 'Link alpha') inputtedLinkAlpha(v);
-    if (key == 'Node size') inputtedNodeSize(v);
-    if (key == 'Node stroke size') inputtedNodeStrokeSize(v);
-    if (key == 'Node size exponent') inputtedNodeSizeExponent(v);
-    if (key == 'Link width exponent') inputtedLinkWidthExponent(v);
+    if (key == 'Width') inputtedLinkWidth(v);
+    if (key == 'Alpha') inputtedLinkAlpha(v);
+    if (key == 'Size') inputtedNodeSize(v);
+    if (key == 'Stroke size') inputtedNodeStrokeSize(v);
+    if (key == 'Size exponent') inputtedNodeSizeExponent(v);
+    if (key == 'Width exponent') inputtedLinkWidthExponent(v);
     if (key == 'Zoom') inputtedZoom(v);
   });
 
@@ -866,7 +871,7 @@ function vis(new_controls) {
       })
 
       // Remove singleton nodes
-      if (!controls['Show singleton nodes']) {
+      if (!controls['Singleton nodes']) {
         graph['nodes'] = graph.nodes.filter(n => {
           var keepNode = nodeStrengths[n.id] > 0;
           if (!keepNode) {
@@ -877,7 +882,7 @@ function vis(new_controls) {
       }
 
       // Resize nodes
-      if (controls['Node size by strength']) {
+      if (controls['Size by strength']) {
         graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
         negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
       }
@@ -898,7 +903,7 @@ function vis(new_controls) {
       })
 
       // Add nodes back
-      if (!controls['Show singleton nodes']) {
+      if (!controls['Singleton nodes']) {
         negativeGraph['nodes'] = negativeGraph.nodes.filter(n => {
           var keepNode = nodeStrengths[n.id] > 0;
           if (keepNode) {
@@ -909,7 +914,7 @@ function vis(new_controls) {
       }
 
       // Resize nodes
-      if (controls['Node size by strength']) {
+      if (controls['Size by strength']) {
         graph.nodes.forEach(n => {
           n.size = nodeStrengths[n.id]
         })
@@ -1034,17 +1039,17 @@ function vis(new_controls) {
       let network_properties = {};
       network_properties.xlim = [ 0, width ];
       network_properties.ylim = [ 0, height ];
-      network_properties.linkColor = controls['Link stroke'];
-      network_properties.linkAlpha = controls['Link alpha'];
-      network_properties.nodeStrokeColor = controls['Node stroke'];
-      network_properties.nodeStrokeWidth = controls['Node stroke size'] * controls['Zoom'];
+      network_properties.linkColor = controls['Color'];
+      network_properties.linkAlpha = controls['Alpha'];
+      network_properties.nodeStrokeColor = controls['Ring color'];
+      network_properties.nodeStrokeWidth = controls['Stroke size'] * controls['Zoom'];
       network_properties.links = [];
       network_properties.nodes = [];
 
       graph.links.forEach(function(d){
-        let thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) 
+        let thisLinkWidth = (d.weight || 1) ** (controls['Width exponent']) 
                             * linkWidthNorm 
-                            * controls['Link width']
+                            * controls['Width']
                             * controls['Zoom'];
         //network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
         network_properties.links.push({
@@ -1054,9 +1059,9 @@ function vis(new_controls) {
         });
       });
       graph.nodes.forEach(function(d){
-        let thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) 
+        let thisNodeSize = (d.size || 1) ** (controls['Size exponent']) 
                             * nodeSizeNorm 
-                            * controls['Node size']
+                            * controls['Size']
                             * (2*controls['Zoom']-1);
         network_properties.nodes.push({
           id: d.id,
