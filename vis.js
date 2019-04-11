@@ -65,7 +65,7 @@ function vis(new_controls) {
           restartIfValidCSV(reader.result)
         }
       } else {
-        swal({ text: "File not supported", icon: "error" })
+        Swal.fire({ text: "File not supported", type: "error" })
         return false
       }
       reader.readAsText(file);
@@ -92,32 +92,18 @@ function vis(new_controls) {
       }
     }
     post_json(nw_prop, controls_copy, canvas, function(){
-      swal({
-        //icon: "success",
-        text: "Success! Closing in 3 seconds.",
-        icon: "success",
-        timer: 3000,
-        buttons: {
-         // I know this is all mixed up but it's apparently the
-         // only way to tell swal to do the same thing when "Ok"
-         // is pressed OR the time ran out
-          cancel: {
-            text: "Ok",
-            value: false,
-            visible: true,
-            className: "",
-            closeModal: true,
-          },
-          confirm: {
-            text: "Cancel",
-            value: true,
-            visible: true,
-            className: "",
-            closeModal: true
-          }
-        }
+      Swal.fire({
+        //type: "success",
+        title: "Success!",
+        text: "Click OK to close the window.",
+        type: "success",
+        timer: 1000,
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'OK',
       }).then((willDelete) => {
-          if (willDelete) {
+          if (!willDelete) {
           } else {
             post_stop();
           }
@@ -153,7 +139,7 @@ function vis(new_controls) {
   };
 
   var isLocal = window.location['href'].includes("http://localhost");
-  var isWeb = window.location['href'].includes("https://ulfaslak");
+  var isWeb = true;//window.location['href'].includes("https://ulfaslak");
 
   if (isLocal) {
     console.log("isLocal")
@@ -551,7 +537,7 @@ function vis(new_controls) {
     if (controls['Path to file'].endsWith(".json")) {
       d3.json(controls['Path to file'], function(error, _graph) {
         if (error) {
-          swal({ text: "File not found", icon: "error" })
+          Swal.fire({ text: "File not found", type: "error" })
           return false
         }
         restartIfValidJSON(_graph);
@@ -561,7 +547,7 @@ function vis(new_controls) {
         fetch(controls['Path to file']).then(r => r.text()).then(r => restartIfValidCSV(r));
       } catch (error) {
         throw error;
-        swal({ text: "File not found", icon: "error" })
+        Swal.fire({ text: "File not found", type: "error" })
       }
     }
   }
@@ -571,23 +557,23 @@ function vis(new_controls) {
 
     // Check for 'nodes' and 'links' lists
     if (!masterGraph.nodes || masterGraph.nodes.length == 0) {
-      swal({ text: "Dataset does not have a key 'nodes'", icon: "error" })
+      Swal.fire({ text: "Dataset does not have a key 'nodes'", type: "error" })
       return false
     }
     if (!masterGraph.links) {
-      swal({ text: "Dataset does not have a key 'links'", icon: "warning" })
+      Swal.fire({ text: "Dataset does not have a key 'links'", type: "warning" })
     }
 
     // Check that node and link objects are formatted right
     for (var d of masterGraph.nodes) {
       if (!d3.keys(d).includes("id")) {
-        swal({ text: "Found objects in 'nodes' without 'id' key.", icon: "error" });
+        Swal.fire({ text: "Found objects in 'nodes' without 'id' key.", type: "error" });
         return false;
       }
     }
     for (var d of masterGraph.links) {
       if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
-        swal({ text: "Found objects in 'links' without 'source' or 'target' key.", icon: "error" });
+        Swal.fire({ text: "Found objects in 'links' without 'source' or 'target' key.", type: "error" });
         return false;
       }
     }
@@ -602,38 +588,38 @@ function vis(new_controls) {
     }); linksNodesSet.delete(undefined)
 
     if (nodesNodesSet.size == 0) {
-      swal({ text: "No nodes found.", icon: "error" })
+      Swal.fire({ text: "No nodes found.", type: "error" })
       return false;
     }
     if (nodesNodes.includes(null)) {
-      swal({ text: "Found items in node list without 'id' key.", icon: "error" });
+      Swal.fire({ text: "Found items in node list without 'id' key.", type: "error" });
       return false;
     }
     if (nodesNodes.length != nodesNodesSet.size) {
-      swal({ text: "Found multiple nodes with the same id.", icon: "error" });
+      Swal.fire({ text: "Found multiple nodes with the same id.", type: "error" });
       return false;
     }
     if (nodesNodesSet.size < linksNodesSet.size) {
-      swal({ text: "Found nodes referenced in 'links' which are not in 'nodes'.", icon: "error" });
+      Swal.fire({ text: "Found nodes referenced in 'links' which are not in 'nodes'.", type: "error" });
       return false;
     }
 
     // Check that attributes are indicated consistently in both nodes and links
     var countWeight = masterGraph.links.filter(n => { return 'weight' in n }).length
     if (0 < countWeight & countWeight < masterGraph.links.length) {
-      swal({ text: "Found links with and links without 'weight' attribute", icon: "error" });
+      Swal.fire({ text: "Found links with and links without 'weight' attribute", type: "error" });
       return false;
     } else if (countWeight == 0) {
       masterGraph.links.forEach(l => { l.weight = 1; })
     }
     var countGroup = masterGraph.nodes.filter(n => { return 'group' in n }).length
     if (0 < countGroup & countGroup < masterGraph.nodes.length) {
-      swal({ text: "Found nodes with and nodes without 'group' attribute", icon: "error" });
+      Swal.fire({ text: "Found nodes with and nodes without 'group' attribute", type: "error" });
       return false;
     }
     countSize = masterGraph.nodes.filter(n => { return 'size' in n }).length
     if (0 < countSize & countSize < masterGraph.nodes.length) {
-      swal({ text: "Found nodes with and nodes without 'size' attribute", icon: "error" });
+      Swal.fire({ text: "Found nodes with and nodes without 'size' attribute", type: "error" });
       return false;
     }
     else if (countSize == 0) {
@@ -655,10 +641,10 @@ function vis(new_controls) {
     })
 
     if (foreignNodesAttributes.size > 0) {
-      swal({ text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), icon: "warning" })
+      Swal.fire({ text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), type: "warning" })
     }
     if (foreignLinksAttributes.size > 0) {
-      swal({ text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), icon: "warning" })
+      Swal.fire({ text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), type: "warning" })
     }
 
     // Reference graph (is never changed)
@@ -706,7 +692,7 @@ function vis(new_controls) {
     })
 
     if (zeroLinksCount > 0) {
-      swal({ text: "Removed " + zeroLinksCount + " links with weight 0", icon: "warning" })
+      Swal.fire({ text: "Removed " + zeroLinksCount + " links with weight 0", type: "warning" })
     }
 
     // Reference graph (is never changed)
@@ -766,7 +752,7 @@ function vis(new_controls) {
       if (validColor(g)) {
         activeSwatch[g] = getHexColor(g);
       } else {
-        activeSwatch[g] = '#' + Math.floor(Math.random() * 16777215).toString(16);
+        activeSwatch[g] = randomColor();
       }
     }
     window.referenceSwatch = _.cloneDeep(activeSwatch)
@@ -1053,5 +1039,14 @@ function vis(new_controls) {
       });
 
       return network_properties;
+  }
+
+  function randomColor() {
+    let col = "#"
+    for (i of d3.range(3)){
+      let num = Math.floor(Math.random() * 255).toString(16)
+      col += ("0" + num).slice(-2)
+    }
+    return col
   }
 }
