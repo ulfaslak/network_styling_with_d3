@@ -95,9 +95,9 @@ function vis(new_controls) {
       Swal.fire({
         //type: "success",
         title: "Success!",
-        text: "Click OK to close the window.",
+        text: "Closes automatically after 3 seconds.",
         type: "success",
-        timer: 1000,
+        timer: 3000,
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
