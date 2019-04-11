@@ -139,7 +139,7 @@ function vis(new_controls) {
   };
 
   var isLocal = window.location['href'].includes("http://localhost");
-  var isWeb = true;//window.location['href'].includes("https://ulfaslak");
+  var isWeb = window.location['href'].includes("https://ulfaslak");
 
   if (isLocal) {
     console.log("isLocal")
