@@ -85,6 +85,7 @@ function vis(new_controls) {
     for (let prop in controls){
       if (
         (controls.hasOwnProperty(prop)) &&
+        (prop != 'Path to file') &&
         (prop != 'Post to Python') &&
         (prop != 'Download figure')
        ){
@@ -115,7 +116,8 @@ function vis(new_controls) {
   var controls = {
     'Path to file': "",
     'Download figure': download,
-    'Apply heat (wiggle)': false,
+    'Wiggle': false,
+    'Freeze': false,
     'Charge strength': -30,
     'Center gravity': 0.1,
     'Link distance': 10,
@@ -189,13 +191,14 @@ function vis(new_controls) {
   var title1_1 = "URL of eligible file in either JSON or CSV format"
   var title1_2 = "Upload a network from your computer in either JSON or CSV format"
   var title1_3 = "Download the network as a PNG image"
-  var title1_4 = "In case the visualization was started from Python, post all calculated node and link properties back to Python.";
+  var title1_4 = "Post all calculated node and link properties back to Python.";
   var title1_5 = "Zoom in or out"
   var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
   var title2_2 = "Push the nodes more or less towards the center of the canvas"
   var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
   var title2_5 = "Make it harder for nodes to overlap"
-  var title2_5 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
+  var title2_6 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
+  var title2_7 = "Set force layout algorithm temperature to zero, causing the nodes to freeze in their position."
   var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Node fill" will continuously change the color of all groups'
   var title3_2 = "The color of the ring around nodes"
   var title3_3 = "The color of node labels"
@@ -232,7 +235,8 @@ function vis(new_controls) {
   f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) }).title(title2_2);
   f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) }).title(title2_3);
   f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) }).title(title2_5);
-  f2.add(controls, 'Apply heat (wiggle)', false).onChange(function(v) { inputtedReheat(v) }).title(title2_5);
+  f2.add(controls, 'Wiggle', false).onChange(function(v) { inputtedReheat(v) }).listen().title(title2_6);
+  f2.add(controls, 'Freeze', false).onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
 
   var f3 = gui.addFolder('Nodes'); f3.open();
   f3.addColor(controls, 'Node fill', controls['Node fill']).onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
@@ -290,7 +294,7 @@ function vis(new_controls) {
       graph.nodes.forEach(drawText);
     }
 
-    simulation.alpha(1).restart();
+    simulation.alpha(!nodePositions ? 1 : 0).restart();
   }
 
   handleURL(controls['Path to file']);
@@ -365,10 +369,12 @@ function vis(new_controls) {
   }
 
   function computeNodeColor(d) {
-    if (d.group) {
-      return activeSwatch[d.group]
+    if (d.color) {
+      return d.color;
+    } else if (d.group) {
+      return activeSwatch[d.group];
     } else {
-      return controls['Node fill']
+      return controls['Node fill'];
     }
   }
 
@@ -400,6 +406,16 @@ function vis(new_controls) {
   function inputtedReheat(v) {
     simulation.alpha(0.5);
     simulation.alphaTarget(v).restart();
+    if (v) controls['Freeze'] = !v;
+  }
+
+  function inputtedFreeze(v) {
+    if (v) {
+      controls['Wiggle'] = !v
+    } else {
+      simulation.alphaTarget(0)
+    }
+    v ? simulation.stop() : simulation.restart()
   }
 
 
@@ -565,12 +581,6 @@ function vis(new_controls) {
     }
 
     // Check that node and link objects are formatted right
-    for (var d of masterGraph.nodes) {
-      if (!d3.keys(d).includes("id")) {
-        Swal.fire({ text: "Found objects in 'nodes' without 'id' key.", type: "error" });
-        return false;
-      }
-    }
     for (var d of masterGraph.links) {
       if (!d3.keys(d).includes("source") || !d3.keys(d).includes("target")) {
         Swal.fire({ text: "Found objects in 'links' without 'source' or 'target' key.", type: "error" });
@@ -627,24 +637,38 @@ function vis(new_controls) {
     }
 
     // Check for foreign node and link attributes
-    var foreignNodesAttributes = new Set()
-    masterGraph.nodes.forEach(d => {
-      d3.keys(d).forEach(k => {
-        if (!['id', 'size', 'group'].includes(k)) foreignNodesAttributes.add(k)
-      })
-    })
-    var foreignLinksAttributes = new Set()
-    masterGraph.links.forEach(d => {
-      d3.keys(d).forEach(k => {
-        if (!['source', 'target', 'weight'].includes(k)) foreignLinksAttributes.add(k)
-      })
-    })
+    // var foreignNodesAttributes = new Set()
+    // masterGraph.nodes.forEach(d => {
+    //   d3.keys(d).forEach(k => {
+    //     if (!['id', 'size', 'group'].includes(k)) foreignNodesAttributes.add(k)
+    //   })
+    // })
+    // var foreignLinksAttributes = new Set()
+    // masterGraph.links.forEach(d => {
+    //   d3.keys(d).forEach(k => {
+    //     if (!['source', 'target', 'weight'].includes(k)) foreignLinksAttributes.add(k)
+    //   })
+    // })
 
-    if (foreignNodesAttributes.size > 0) {
-      Swal.fire({ text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), type: "warning" })
+    // if (foreignNodesAttributes.size > 0) {
+    //   Swal.fire({ text: "Found unexpected node attribute(s): " + Array.from(foreignNodesAttributes).join(", "), type: "warning" })
+    // }
+    // if (foreignLinksAttributes.size > 0) {
+    //   Swal.fire({ text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), type: "warning" })
+    // }
+
+    // Check for initial node positions
+    nodePositions = true
+    for (var d of masterGraph.nodes) {
+      if (!d3.keys(d).includes("x") && !d3.keys(d).includes("y")) {
+        nodePositions = false; break;
+      }
     }
-    if (foreignLinksAttributes.size > 0) {
-      Swal.fire({ text: "Found unexpected link attribute(s): " + Array.from(foreignLinksAttributes).join(", "), type: "warning" })
+    if (nodePositions) {
+      masterGraph.nodes.forEach((d, i) => {
+        d['x'] = zoomScaler.invert(d.x)
+        d['y'] = zoomScaler.invert(d.y)
+      })
     }
 
     // Reference graph (is never changed)
@@ -1018,24 +1042,29 @@ function vis(new_controls) {
       network_properties.nodes = [];
 
       graph.links.forEach(function(d){
-          let thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) 
-                              * linkWidthNorm 
-                              * controls['Link width']
-                              * controls['Zoom'];
-          network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
+        let thisLinkWidth = (d.weight || 1) ** (controls['Link width exponent']) 
+                            * linkWidthNorm 
+                            * controls['Link width']
+                            * controls['Zoom'];
+        //network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
+        network_properties.links.push({
+          source: d.source.id,
+          target: d.target.id,
+          width: thisLinkWidth
+        });
       });
       graph.nodes.forEach(function(d){
-          let thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) 
-                              * nodeSizeNorm 
-                              * controls['Node size']
-                              * (2*controls['Zoom']-1);
-          network_properties.nodes.push({
-            id: d.id,
-            x: zoomScaler(d.x),
-            y: height-zoomScaler(d.y), 
-            radius: thisNodeSize,
-            color: computeNodeColor(d)
-          });
+        let thisNodeSize = (d.size || 1) ** (controls['Node size exponent']) 
+                            * nodeSizeNorm 
+                            * controls['Node size']
+                            * (2*controls['Zoom']-1);
+        network_properties.nodes.push({
+          id: d.id,
+          x: zoomScaler(d.x),
+          y: zoomScaler(d.y), 
+          radius: thisNodeSize,
+          color: computeNodeColor(d)
+        });
       });
 
       return network_properties;
