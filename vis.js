@@ -37,7 +37,7 @@ function vis(new_controls) {
     )
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide(0).radius(function(d) { return controls['Collision'] * computeNodeRadii(d) }))
+    .force("collide", d3.forceCollide(0).radius(function(d) { return controls['node_collision'] * computeNodeRadii(d) }))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
 
 
@@ -85,9 +85,9 @@ function vis(new_controls) {
     for (let prop in controls){
       if (
         (controls.hasOwnProperty(prop)) &&
-        (prop != 'Path to file') &&
-        (prop != 'Post to Python') &&
-        (prop != 'Download figure')
+        (prop != 'file_path') &&
+        (prop != 'post_to_python') &&
+        (prop != 'download_figure')
        ){
         controls_copy[prop] = controls[prop];
       }
@@ -113,36 +113,36 @@ function vis(new_controls) {
   }
 
   // Control variables
-  var controls = {
+  window.controls = {
     // Input/output
-    'Path to file': "",
-    'Download figure': download,
-    'Zoom': 1.5,
+    'file_path': "",
+    'download_figure': download,
+    'zoom': 1.5,
     // Physics
-    'Charge strength': -30,
-    'Center gravity': 0.1,
-    'Link distance': 10,
-    'Collision': false,
-    'Wiggle': false,
-    'Freeze': false,
+    'node_charge': -30,
+    'node_gravity': 0.1,
+    'link_distance': 10,
+    'node_collision': false,
+    'wiggle_nodes': false,
+    'freeze_nodes': false,
     // Nodes
-    'Fill color': '#16a085',
-    'Ring color': '#000000',
-    'Label stroke': '#000000',
-    'Show labels': false,
-    'Size by strength': false,
-    'Size': 10,
-    'Stroke size': 0.5,
-    'Size exponent': 0.5,
+    'node_fill_color': '#16a085',
+    'node_stroke_color': '#000000',
+    'node_label_color': '#000000',
+    'display_node_labels': false,
+    'scale_node_size_by_strength': false,
+    'node_size': 10,
+    'node_stroke_width': 0.5,
+    'node_size_unevenness': 0.5,
     // Links
-    'Color': '#7c7c7c',
-    'Width': 5,
-    'Alpha': 0.5,
-    'Width exponent': 0.5,
+    'link_color': '#7c7c7c',
+    'link_width': 5,
+    'link_alpha': 0.5,
+    'link_width_unevenness': 0.5,
     // Thresholding
-    'Singleton nodes': false,
-    'Min. link weight %': 0,
-    'Max. link weight %': 100
+    'display_singleton_nodes': false,
+    'min_link_weight_percentage': 0,
+    'max_link_weight_percentage': 100
   };
 
   var isLocal = window.location['href'].includes("http://localhost");
@@ -150,21 +150,21 @@ function vis(new_controls) {
 
   if (isLocal) {
     console.log("isLocal")
-    controls['Post to Python'] = postData
+    controls['post_to_python'] = postData
   }
   if (isWeb) {
     console.log("isWeb")
-    controls['Upload file'] = uploadFile
+    controls['upload_file'] = uploadFile
   }
   
-  let referenceColor = controls['Fill color'];
+  let referenceColor = controls['node_fill_color'];
     
   Reflect.ownKeys(new_controls).forEach(function(key) {
     controls[key] = new_controls[key];
   });
 
-  if (controls['Path to file'] == "") {
-    controls['Path to file'] = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json"
+  if (controls['file_path'] == "") {
+    controls['file_path'] = "https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/0b9595c09b9f70a77ee05ca16d5a8b42a9130c9e/miserables.json"
   }
 
   // Hack to enable titles (https://stackoverflow.com/a/29563786/3986879)
@@ -211,11 +211,11 @@ function vis(new_controls) {
   var title3_5 = "Rescale the size of each node relative to their strength (weighted degree)"
   var title3_6 = "Change the size of all nodes"
   var title3_7 = "Change the width of the ring around nodes"
-  var title3_8 = "Tweak the node size scaling function. Increase to make big nodes bigger and small nodes smaller"
+  var title3_8 = "Tweak the node size scaling function. Increase to make big nodes bigger and small nodes smaller. Useful for highlighting densely connected nodes."
   var title4_1 = "The color of links"
   var title4_2 = "Change the width of all links"
   var title4_3 = "How transparent links should be. Useful in large dense networks"
-  var title4_4 = "Tweak the link width scaling function. Increase to make wide links wider and narrow links narrower"
+  var title4_4 = "Tweak the link width scaling function. Increase to make wide links wider and narrow links narrower. Useful for highlighting strong connections"
   var title5_1 = "Whether or not to show links that have zero degree"
   var title5_2 = "Lower percentile threshold on link weight"
   var title5_3 = "Upper percentile threshold on link weight"
@@ -229,40 +229,40 @@ function vis(new_controls) {
   gui.remember(controls);
 
   var f1 = gui.addFolder('Input/output'); f1.open();
-  if (isWeb) f1.add(controls, 'Path to file', controls['Path to file']).onFinishChange(function(v) { handleURL(v) }).title(title1_1);
-  if (isWeb) f1.add(controls, 'Upload file').title(title1_2);
-  f1.add(controls, 'Download figure').title(title1_3);
-  if (isLocal) f1.add(controls, 'Post to Python').title(title1_4);
-  f1.add(controls, 'Zoom', 0.6, 5).onChange(function(v) { inputtedZoom(v) }).title(title1_5);
+  if (isWeb) f1.add(controls, 'file_path', controls['file_path']).name('Path to file').onFinishChange(function(v) { handleURL(v) }).title(title1_1);
+  if (isWeb) f1.add(controls, 'upload_file').name('Upload file').title(title1_2);
+  f1.add(controls, 'download_figure').name('Download figure').title(title1_3);
+  if (isLocal) f1.add(controls, 'post_to_python').name('Post to Python').title(title1_4);
+  f1.add(controls, 'zoom', 0.6, 5).name('Zoom').onChange(function(v) { inputtedZoom(v) }).title(title1_5);
 
   var f2 = gui.addFolder('Physics'); f2.open();
-  f2.add(controls, 'Charge strength', -100, 0).onChange(function(v) { inputtedCharge(v) }).title(title2_1);
-  f2.add(controls, 'Center gravity', 0, 1).onChange(function(v) { inputtedGravity(v) }).title(title2_2);
-  f2.add(controls, 'Link distance', 0.1, 50).onChange(function(v) { inputtedDistance(v) }).title(title2_3);
-  f2.add(controls, 'Collision', false).onChange(function(v) { inputtedCollision(v) }).title(title2_5);
-  f2.add(controls, 'Wiggle', false).onChange(function(v) { inputtedReheat(v) }).listen().title(title2_6);
-  f2.add(controls, 'Freeze', false).onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
+  f2.add(controls, 'node_charge', -100, 0).name('Charge').onChange(function(v) { inputtedCharge(v) }).title(title2_1);
+  f2.add(controls, 'node_gravity', 0, 1).name('Gravity').onChange(function(v) { inputtedGravity(v) }).title(title2_2);
+  f2.add(controls, 'link_distance', 0.1, 50).name('Link distance').onChange(function(v) { inputtedDistance(v) }).title(title2_3);
+  f2.add(controls, 'node_collision', false).name('Collision').onChange(function(v) { inputtedCollision(v) }).title(title2_5);
+  f2.add(controls, 'wiggle_nodes', false).name('Wiggle').onChange(function(v) { inputtedReheat(v) }).listen().title(title2_6);
+  f2.add(controls, 'freeze_nodes', false).name('Freeze').onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
 
   var f3 = gui.addFolder('Nodes'); f3.open();
-  f3.addColor(controls, 'Fill color', controls['Fill color']).onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
-  f3.addColor(controls, 'Ring color', controls['Ring color']).onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
-  f3.addColor(controls, 'Label stroke', controls['Label stroke']).onChange(function(v) { inputtedTextStroke(v) }).title(title3_3);
-  f3.add(controls, 'Show labels', false).onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
-  f3.add(controls, 'Size by strength', false).onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
-  f3.add(controls, 'Size', 0, 50).onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
-  f3.add(controls, 'Stroke size', 0, 10).onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
-  f3.add(controls, 'Size exponent', 0., 3.).onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
+  f3.addColor(controls, 'node_fill_color', controls['node_fill_color']).name('Fill').onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
+  f3.addColor(controls, 'node_stroke_color', controls['node_stroke_color']).name('Stroke').onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
+  f3.addColor(controls, 'node_label_color', controls['node_label_color']).name('Label color').onChange(function(v) { inputtedTextStroke(v) }).title(title3_3);
+  f3.add(controls, 'display_node_labels', false).name('Display labels').onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
+  f3.add(controls, 'scale_node_size_by_strength', false).name('Size by strength').onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
+  f3.add(controls, 'node_size', 0, 50).name('Size').onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
+  f3.add(controls, 'node_stroke_width', 0, 10).name('Stroke width').onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
+  f3.add(controls, 'node_size_unevenness', 0., 3.).name('Size unevenness').onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
 
   var f4 = gui.addFolder('Links'); f4.open();
-  f4.addColor(controls, 'Color', controls['Color']).onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
-  f4.add(controls, 'Width', 0.01, 30).onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
-  f4.add(controls, 'Alpha', 0, 1).onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
-  f4.add(controls, 'Width exponent', 0., 3.).onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
+  f4.addColor(controls, 'link_color', controls['link_color']).name('Color').onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
+  f4.add(controls, 'link_width', 0.01, 30).name('Width').onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
+  f4.add(controls, 'link_alpha', 0, 1).name('Alpha').onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
+  f4.add(controls, 'link_width_unevenness', 0., 3.).name('Width unevenness').onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
 
   var f5 = gui.addFolder('Thresholding'); f5.close();
-  f5.add(controls, 'Singleton nodes', false).onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
-  f5.add(controls, 'Min. link weight %', 0, 99).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
-  f5.add(controls, 'Max. link weight %', 1, 100).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
+  f5.add(controls, 'display_singleton_nodes', false).name('Singleton nodes').onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
+  f5.add(controls, 'min_link_weight_percentage', 0, 99).name('Min. link weight %').onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
+  f5.add(controls, 'max_link_weight_percentage', 1, 100).name('Max. link weight %').onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
   // Restart simulation
   function restart() {
@@ -287,13 +287,13 @@ function vis(new_controls) {
 
       // draw
       context.clearRect(0, 0, width, height);
-      context.strokeStyle = controls['Color'];
-      context.globalAlpha = controls['Alpha'];
+      context.strokeStyle = controls['link_color'];
+      context.globalAlpha = controls['link_alpha'];
       context.globalCompositeOperation = "destination-over";
       graph.links.forEach(drawLink);
       context.globalAlpha = 1.0
-      context.strokeStyle = controls['Ring color'];
-      context.lineWidth = controls['Stroke size'] * controls['Zoom'];
+      context.strokeStyle = controls['node_stroke_color'];
+      context.lineWidth = controls['node_stroke_width'] * controls['zoom'];
       context.globalCompositeOperation = "source-over";
       graph.nodes.forEach(drawNode);
       graph.nodes.forEach(drawText);
@@ -302,7 +302,7 @@ function vis(new_controls) {
     simulation.alpha(!nodePositions ? 1 : 0).restart();
   }
 
-  handleURL(controls['Path to file']);
+  handleURL(controls['file_path']);
   uploadEvent();
 
   // Network functions
@@ -330,30 +330,30 @@ function vis(new_controls) {
   }
 
   function drawLink(d) {
-    var thisLinkWidth = (d.weight || 1) ** (controls['Width exponent']) * linkWidthNorm * controls['Width'];
+    var thisLinkWidth = (d.weight || 1) ** (controls['link_width_unevenness']) * linkWidthNorm * controls['link_width'];
     context.beginPath();
     context.moveTo(zoomScaler(d.source.x), zoomScaler(d.source.y));
     context.lineTo(zoomScaler(d.target.x), zoomScaler(d.target.y));
-    context.lineWidth = thisLinkWidth * controls['Zoom'];
+    context.lineWidth = thisLinkWidth * controls['zoom'];
     context.stroke();
   }
 
   function drawNode(d) {
     // Node
-    var thisNodeSize = (d.size || 1) ** (controls['Size exponent']) * nodeSizeNorm * controls['Size'];
+    var thisNodeSize = (d.size || 1) ** (controls['node_size_unevenness']) * nodeSizeNorm * controls['node_size'];
     context.beginPath();
-    context.moveTo(zoomScaler(d.x) + thisNodeSize * (controls['Zoom'] + (controls['Zoom'] - 1)), zoomScaler(d.y));
-    context.arc(zoomScaler(d.x), zoomScaler(d.y), thisNodeSize * (controls['Zoom'] + (controls['Zoom'] - 1)), 0, 2 * Math.PI);
+    context.moveTo(zoomScaler(d.x) + thisNodeSize * (controls['zoom'] + (controls['zoom'] - 1)), zoomScaler(d.y));
+    context.arc(zoomScaler(d.x), zoomScaler(d.y), thisNodeSize * (controls['zoom'] + (controls['zoom'] - 1)), 0, 2 * Math.PI);
     context.fillStyle = computeNodeColor(d);
     context.fill();
     context.stroke();
   }
 
   function drawText(d) {
-    if (controls['Show labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
-      var thisNodeSize = (d.size || 1) ** (controls['Size exponent']) * nodeSizeNorm * controls['Size'];
-      context.font = clip(thisNodeSize * controls['Zoom'] * 2, 10, 20) + "px Helvetica"
-      context.fillStyle = controls['Label stroke']
+    if (controls['display_node_labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
+      var thisNodeSize = (d.size || 1) ** (controls['node_size_unevenness']) * nodeSizeNorm * controls['node_size'];
+      context.font = clip(thisNodeSize * controls['zoom'] * 2, 10, 20) + "px Helvetica"
+      context.fillStyle = controls['node_label_color']
       context.fillText(d.id, zoomScaler(d.x), zoomScaler(d.y))
     }
   }
@@ -363,12 +363,12 @@ function vis(new_controls) {
   // -----------------
 
   logscaler = d3.scaleLog()
-  zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
+  zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['zoom']), controls['zoom'] * width])
 
   function computeNodeRadii(d) {
-    var thisNodeSize = nodeSizeNorm * controls['Size'];
+    var thisNodeSize = nodeSizeNorm * controls['node_size'];
     if (d.size) {
-      thisNodeSize *= (d.size) ** (controls['Size exponent']);
+      thisNodeSize *= (d.size) ** (controls['node_size_unevenness']);
     }
     return thisNodeSize
   }
@@ -379,7 +379,7 @@ function vis(new_controls) {
     } else if (d.group) {
       return activeSwatch[d.group];
     } else {
-      return controls['Fill color'];
+      return controls['node_fill_color'];
     }
   }
 
@@ -399,24 +399,24 @@ function vis(new_controls) {
   }
 
   function inputtedDistance(v) {
-    simulation.force("link").distance(controls['Link distance']);
+    simulation.force("link").distance(controls['link_distance']);
     simulation.alpha(1).restart();
   }
 
   function inputtedCollision(v) {
-    simulation.force("collide").radius(function(d) { return controls['Collision'] * computeNodeRadii(d) });
+    simulation.force("collide").radius(function(d) { return controls['node_collision'] * computeNodeRadii(d) });
     simulation.alpha(1).restart();
   }
 
   function inputtedReheat(v) {
     simulation.alpha(0.5);
     simulation.alphaTarget(v).restart();
-    if (v) controls['Freeze'] = !v;
+    if (v) controls['freeze_nodes'] = !v;
   }
 
   function inputtedFreeze(v) {
     if (v) {
-      controls['Wiggle'] = !v
+      controls['wiggle_nodes'] = !v
     } else {
       simulation.alphaTarget(0)
     }
@@ -490,7 +490,7 @@ function vis(new_controls) {
   }
 
   function inputtedNodeSize(v) {
-    if (controls['Collision']) {
+    if (controls['node_collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
       simulation.alpha(1).restart();
     } else {
@@ -503,8 +503,8 @@ function vis(new_controls) {
   }
 
   function inputtedNodeSizeExponent(v) {
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['Size exponent'])
-    if (controls['Collision']) {
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_unevenness'])
+    if (controls['node_collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
       simulation.alpha(1).restart();
     } else {
@@ -513,12 +513,12 @@ function vis(new_controls) {
   }
 
   function inputtedLinkWidthExponent(v) {
-    linkWidthNorm = 1 / maxLinkWeight ** (controls['Width exponent'])
+    linkWidthNorm = 1 / maxLinkWeight ** (controls['link_width_unevenness'])
     simulation.restart();
   }
 
   function inputtedZoom(v) {
-    zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['Zoom']), controls['Zoom'] * width])
+    zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['zoom']), controls['zoom'] * width])
     simulation.restart();
   }
 
@@ -527,13 +527,13 @@ function vis(new_controls) {
   function inputtedMinLinkWeight(v) {
     dvMin = v - vMinPrev
     if (shiftDown) {
-      controls['Max. link weight %'] = d3.min([100, controls['Max. link weight %'] + dvMin])
+      controls['max_link_weight_percentage'] = d3.min([100, controls['max_link_weight_percentage'] + dvMin])
     } else {
-      controls['Max. link weight %'] = d3.max([controls['Max. link weight %'], v + 1])
+      controls['max_link_weight_percentage'] = d3.max([controls['max_link_weight_percentage'], v + 1])
     }
-    dvMax = controls['Max. link weight %'] - vMaxPrev
+    dvMax = controls['max_link_weight_percentage'] - vMaxPrev
     vMinPrev = v
-    vMaxPrev = controls['Max. link weight %']
+    vMaxPrev = controls['max_link_weight_percentage']
     shave(); restart();
   }
 
@@ -542,12 +542,12 @@ function vis(new_controls) {
   function inputtedMaxLinkWeight(v) {
     dvMax = v - vMaxPrev
     if (shiftDown) {
-      controls['Min. link weight %'] = d3.max([0, controls['Min. link weight %'] + dvMax])
+      controls['min_link_weight_percentage'] = d3.max([0, controls['min_link_weight_percentage'] + dvMax])
     } else {
-      controls['Min. link weight %'] = d3.min([controls['Min. link weight %'], v - 1])
+      controls['min_link_weight_percentage'] = d3.min([controls['min_link_weight_percentage'], v - 1])
     }
-    dvMin = controls['Min. link weight %'] - vMinPrev
-    vMinPrev = controls['Min. link weight %']
+    dvMin = controls['min_link_weight_percentage'] - vMinPrev
+    vMinPrev = controls['min_link_weight_percentage']
     vMaxPrev = v
     shave(); restart();
   }
@@ -555,17 +555,17 @@ function vis(new_controls) {
   // Handle input data
   // -----------------
   function handleURL() {
-    if (controls['Path to file'].endsWith(".json")) {
-      d3.json(controls['Path to file'], function(error, _graph) {
+    if (controls['file_path'].endsWith(".json")) {
+      d3.json(controls['file_path'], function(error, _graph) {
         if (error) {
           Swal.fire({ text: "File not found", type: "error" })
           return false
         }
         restartIfValidJSON(_graph);
       })
-    } else if (controls['Path to file'].endsWith(".csv")) {
+    } else if (controls['file_path'].endsWith(".csv")) {
       try {
-        fetch(controls['Path to file']).then(r => r.text()).then(r => restartIfValidCSV(r));
+        fetch(controls['file_path']).then(r => r.text()).then(r => restartIfValidCSV(r));
       } catch (error) {
         throw error;
         Swal.fire({ text: "File not found", type: "error" })
@@ -674,6 +674,7 @@ function vis(new_controls) {
         d['x'] = zoomScaler.invert(d.x)
         d['y'] = zoomScaler.invert(d.y)
       })
+      controls['freeze_nodes'] = true;
     }
 
     // Reference graph (is never changed)
@@ -685,8 +686,8 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
-    // If 'Size by strength' is toggled, then node sizes need to follow computed degrees
-    if (controls['Size by strength']) {
+    // If 'scale_node_size_by_strength' is toggled, then node sizes need to follow computed degrees
+    if (controls['scale_node_size_by_strength']) {
       graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
 
@@ -736,8 +737,8 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
-    // If 'Size by strength' is toggled, then node sizes need to follow computed degrees
-    if (controls['Size by strength']) {
+    // If 'scale_node_size_by_strength' is toggled, then node sizes need to follow computed degrees
+    if (controls['scale_node_size_by_strength']) {
       graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
 
@@ -806,18 +807,18 @@ function vis(new_controls) {
 
   function recomputeNodeNorms() {
     // Compute node size norms
-    if (controls['Size by strength']) {
+    if (controls['scale_node_size_by_strength']) {
       maxNodeSize = d3.max(d3.values(masterNodeStrengths))
     } else {
       maxNodeSize = d3.max(masterGraph.nodes.map(n => n.size || 0));  // Nodes are given size if they don't have size on load
     }
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['Size exponent'])
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_unevenness'])
   }
 
   function recomputeLinkNorms() {
     maxLinkWeight = d3.max(masterGraph.links.map(l => l.weight || 0));
     minLinkWeight = d3.min(masterGraph.links.map(l => l.weight || 1));
-    linkWidthNorm = 1 / maxLinkWeight ** (controls['Width exponent'])
+    linkWidthNorm = 1 / maxLinkWeight ** (controls['link_width_unevenness'])
   }
 
 
@@ -826,24 +827,24 @@ function vis(new_controls) {
 
     let v = new_controls[key];
 
-    if (key == 'Charge strength') inputtedCharge(v);
-    if (key == 'Center gravity') inputtedGravity(v);
-    if (key == 'Link distance') inputtedDistance(v);
-    if (key == 'Link strength exponent') inputtedLinkStrengthExponent(v);
-    if (key == 'Collision') inputtedCollision(v);
+    if (key == 'node_charge') inputtedCharge(v);
+    if (key == 'node_gravity') inputtedGravity(v);
+    if (key == 'link_distance') inputtedDistance(v);
+    if (key == 'Link strength unevenness') inputtedLinkStrengthExponent(v);
+    if (key == 'node_collision') inputtedCollision(v);
 
-    if (key == 'Fill color') inputtedNodeFill(v);
-    if (key == 'Ring color') inputtedNodeStroke(v);
-    if (key == 'Color') inputtedLinkStroke(v);
-    if (key == 'Label stroke') inputtedTextStroke(v);
-    if (key == 'Show labels') inputtedShowLabels(v);
-    if (key == 'Width') inputtedLinkWidth(v);
-    if (key == 'Alpha') inputtedLinkAlpha(v);
-    if (key == 'Size') inputtedNodeSize(v);
-    if (key == 'Stroke size') inputtedNodeStrokeSize(v);
-    if (key == 'Size exponent') inputtedNodeSizeExponent(v);
-    if (key == 'Width exponent') inputtedLinkWidthExponent(v);
-    if (key == 'Zoom') inputtedZoom(v);
+    if (key == 'node_fill_color') inputtedNodeFill(v);
+    if (key == 'node_stroke_color') inputtedNodeStroke(v);
+    if (key == 'link_color') inputtedLinkStroke(v);
+    if (key == 'node_label_color') inputtedTextStroke(v);
+    if (key == 'display_node_labels') inputtedShowLabels(v);
+    if (key == 'link_width') inputtedLinkWidth(v);
+    if (key == 'link_alpha') inputtedLinkAlpha(v);
+    if (key == 'node_size') inputtedNodeSize(v);
+    if (key == 'node_stroke_width') inputtedNodeStrokeSize(v);
+    if (key == 'node_size_unevenness') inputtedNodeSizeExponent(v);
+    if (key == 'link_width_unevenness') inputtedLinkWidthExponent(v);
+    if (key == 'zoom') inputtedZoom(v);
   });
 
   // Control panel     
@@ -861,7 +862,7 @@ function vis(new_controls) {
 
       // Remove links and update `nodeStrengths
       graph['links'] = graph.links.filter(l => {
-        var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
+        var withinThreshold = (intervalRange(controls['min_link_weight_percentage']) <= l.weight) && (l.weight <= intervalRange(controls['max_link_weight_percentage']))
         if (!withinThreshold) {
           nodeStrengths[l.source.id] -= l.weight || 1;
           nodeStrengths[l.target.id] -= l.weight || 1;
@@ -871,7 +872,7 @@ function vis(new_controls) {
       })
 
       // Remove singleton nodes
-      if (!controls['Singleton nodes']) {
+      if (!controls['display_singleton_nodes']) {
         graph['nodes'] = graph.nodes.filter(n => {
           var keepNode = nodeStrengths[n.id] > 0;
           if (!keepNode) {
@@ -882,7 +883,7 @@ function vis(new_controls) {
       }
 
       // Resize nodes
-      if (controls['Size by strength']) {
+      if (controls['scale_node_size_by_strength']) {
         graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
         negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
       }
@@ -893,7 +894,7 @@ function vis(new_controls) {
 
       // Add links back and update `nodeStrengths`
       negativeGraph['links'] = negativeGraph.links.filter(l => {
-        var withinThreshold = (intervalRange(controls['Min. link weight %']) <= l.weight) && (l.weight <= intervalRange(controls['Max. link weight %']))
+        var withinThreshold = (intervalRange(controls['min_link_weight_percentage']) <= l.weight) && (l.weight <= intervalRange(controls['max_link_weight_percentage']))
         if (withinThreshold) {
           nodeStrengths[l.source.id] += l.weight || 1;
           nodeStrengths[l.target.id] += l.weight || 1;
@@ -903,7 +904,7 @@ function vis(new_controls) {
       })
 
       // Add nodes back
-      if (!controls['Singleton nodes']) {
+      if (!controls['display_singleton_nodes']) {
         negativeGraph['nodes'] = negativeGraph.nodes.filter(n => {
           var keepNode = nodeStrengths[n.id] > 0;
           if (keepNode) {
@@ -914,7 +915,7 @@ function vis(new_controls) {
       }
 
       // Resize nodes
-      if (controls['Size by strength']) {
+      if (controls['scale_node_size_by_strength']) {
         graph.nodes.forEach(n => {
           n.size = nodeStrengths[n.id]
         })
@@ -1010,7 +1011,7 @@ function vis(new_controls) {
   var selectedNodes = [];
   var xy;
   d3.select(canvas).on("mousemove", function() {
-    if (!controls['Show labels']) {
+    if (!controls['display_node_labels']) {
       xy = d3.mouse(this)
       hoveredNode = simulation.find(zoomScaler.invert(xy[0]), zoomScaler.invert(xy[1]), 20)
       if (typeof (hoveredNode) != 'undefined') {
@@ -1039,18 +1040,18 @@ function vis(new_controls) {
       let network_properties = {};
       network_properties.xlim = [ 0, width ];
       network_properties.ylim = [ 0, height ];
-      network_properties.linkColor = controls['Color'];
-      network_properties.linkAlpha = controls['Alpha'];
-      network_properties.nodeStrokeColor = controls['Ring color'];
-      network_properties.nodeStrokeWidth = controls['Stroke size'] * controls['Zoom'];
+      network_properties.linkColor = controls['link_color'];
+      network_properties.linkAlpha = controls['link_alpha'];
+      network_properties.nodeStrokeColor = controls['node_stroke_color'];
+      network_properties.nodeStrokeWidth = controls['node_stroke_width'] * controls['zoom'];
       network_properties.links = [];
       network_properties.nodes = [];
 
       graph.links.forEach(function(d){
-        let thisLinkWidth = (d.weight || 1) ** (controls['Width exponent']) 
+        let thisLinkWidth = (d.weight || 1) ** (controls['link_width_unevenness']) 
                             * linkWidthNorm 
-                            * controls['Width']
-                            * controls['Zoom'];
+                            * controls['link_width']
+                            * controls['zoom'];
         //network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
         network_properties.links.push({
           source: d.source.id,
@@ -1059,10 +1060,10 @@ function vis(new_controls) {
         });
       });
       graph.nodes.forEach(function(d){
-        let thisNodeSize = (d.size || 1) ** (controls['Size exponent']) 
+        let thisNodeSize = (d.size || 1) ** (controls['node_size_unevenness']) 
                             * nodeSizeNorm 
-                            * controls['Size']
-                            * (2*controls['Zoom']-1);
+                            * controls['node_size']
+                            * (2*controls['zoom']-1);
         network_properties.nodes.push({
           id: d.id,
           x: zoomScaler(d.x),
