@@ -68,6 +68,10 @@ p.sidebar-text {
     text-align: justify;
 }
 
-.swal-text {
+.swal2-text {
 	font-family: 'Open sans', sans-serif; color: #777777; font-size: 14px;
+}
+
+.swal2-popup {
+    font-family: "Helvetica Neue", Helvetica, Arial, "Open Sans", sans-serif;
 }
