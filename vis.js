@@ -459,7 +459,7 @@ function vis(new_controls) {
   function inputtedDistance(v) {
     if (isWeighted && linkWeightOrder.length > 1 && controls['link_distance_unevenness'] > 0) {
       simulation.force("link").distance(d => {
-        return (1 - getPercentile(d.weight, linkWeightOrder) ** controls['link_distance']) * v
+        return (1 - getPercentile(d.weight, linkWeightOrder)) ** controls['link_distance'] * v
       });
     } else {
       simulation.force("link").distance(v);
@@ -471,7 +471,7 @@ function vis(new_controls) {
     window.distdist = []
     if (isWeighted && linkWeightOrder.length > 1) {
       simulation.force("link").distance(d => {
-        let val = (1 - getPercentile(d.weight, linkWeightOrder) ** v) * controls['link_distance']
+        let val = (1 - getPercentile(d.weight, linkWeightOrder)) ** v * controls['link_distance']
         distdist.push(val)
         return val
       });
