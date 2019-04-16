@@ -536,7 +536,7 @@ function vis(new_controls) {
       negativeGraph['nodes'] = []
     } else if (!v) {
       graph['nodes'] = graph.nodes.filter(n => {
-        var keepNode = nodeStrengths[n.id] > 0
+        var keepNode = nodeStrengths[n.id] >= minLinkWeight;
         if (!keepNode) negativeGraph['nodes'].push(n);
         return keepNode;
       })
@@ -553,7 +553,7 @@ function vis(new_controls) {
       graph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
       negativeGraph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
     }
-    recomputeNodeNorms()
+    recomputeNodeNorms();
     simulation.restart();
   }
 
@@ -907,7 +907,7 @@ function vis(new_controls) {
       // Remove singleton nodes
       if (!controls['display_singleton_nodes']) {
         graph['nodes'] = graph.nodes.filter(n => {
-          var keepNode = nodeStrengths[n.id] > 0;
+          var keepNode = nodeStrengths[n.id] >= minLinkWeight;
           if (!keepNode) {
             negativeGraph.nodes.push(n)
           }
@@ -939,7 +939,7 @@ function vis(new_controls) {
       // Add nodes back
       if (!controls['display_singleton_nodes']) {
         negativeGraph['nodes'] = negativeGraph.nodes.filter(n => {
-          var keepNode = nodeStrengths[n.id] > 0;
+          var keepNode = nodeStrengths[n.id] >= minLinkWeight;
           if (keepNode) {
             graph['nodes'].push(n)
           }
@@ -1025,8 +1025,9 @@ function vis(new_controls) {
 
   function valIfValid(v, alt) {
     // Use this instead of (v || alt) which won't work when v is 0
-    if (isNaN(+v)) { return alt; }
-    else { return v; }
+    if (typeof(v) == "number") return v;
+    if (typeof(v) == "string") return v;
+    return alt;
   }
 
 
