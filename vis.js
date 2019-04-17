@@ -346,7 +346,7 @@ function vis(new_controls) {
   var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
   var title2_2 = "Push the nodes more or less towards the center of the canvas"
   var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
-  var title2_4 = "Tweak the link distance scaling function. Increase to make strong links shorter and weak links longer."
+  var title2_4 = "Tweak the link distance scaling function. Increase to contract strong links. Most effectful when 'Link distance' is large."
   var title2_5 = "Make it harder for nodes to overlap"
   var title2_6 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
   var title2_7 = "Set force layout algorithm temperature to zero, causing the nodes to freeze in their position."
