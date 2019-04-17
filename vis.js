@@ -147,8 +147,8 @@ function vis(new_controls) {
     'link_width_unevenness': 0.5,
     // Thresholding
     'display_singleton_nodes': false,
-    'min_link_weight_percentile': 0,
-    'max_link_weight_percentile': 100
+    'min_link_weight_percentile': 0.0,
+    'max_link_weight_percentile': 1.0
   };
 
   // Context dependent keys
@@ -413,8 +413,8 @@ function vis(new_controls) {
   // Thresholding
   var f5 = gui.addFolder('Thresholding'); f5.close();
   f5.add(controls, 'display_singleton_nodes', false).name('Singleton nodes').onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
-  f5.add(controls, 'min_link_weight_percentile', 0, 99).name('Min. link weight %').onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
-  f5.add(controls, 'max_link_weight_percentile', 1, 100).name('Max. link weight %').onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
+  f5.add(controls, 'min_link_weight_percentile', 0, 0.99).name('Min. link percentile').step(0.01).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
+  f5.add(controls, 'max_link_weight_percentile', 0.01, 1).name('Max. link percentile').step(0.01).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
 
   // Utility functions //
@@ -603,9 +603,9 @@ function vis(new_controls) {
   function inputtedMinLinkWeight(v) {
     dvMin = v - vMinPrev
     if (shiftDown) {
-      controls['max_link_weight_percentile'] = d3.min([100, controls['max_link_weight_percentile'] + dvMin])
+      controls['max_link_weight_percentile'] = d3.min([1, controls['max_link_weight_percentile'] + dvMin])
     } else {
-      controls['max_link_weight_percentile'] = d3.max([controls['max_link_weight_percentile'], v + 1])
+      controls['max_link_weight_percentile'] = d3.max([controls['max_link_weight_percentile'], v + 0.01])
     }
     dvMax = controls['max_link_weight_percentile'] - vMaxPrev
     vMinPrev = v
@@ -613,14 +613,14 @@ function vis(new_controls) {
     shave(); restart();
   }
 
-  var vMaxPrev = 100;
+  var vMaxPrev = 1;
   var dvMax = 0;
   function inputtedMaxLinkWeight(v) {
     dvMax = v - vMaxPrev
     if (shiftDown) {
       controls['min_link_weight_percentile'] = d3.max([0, controls['min_link_weight_percentile'] + dvMax])
     } else {
-      controls['min_link_weight_percentile'] = d3.min([controls['min_link_weight_percentile'], v - 1])
+      controls['min_link_weight_percentile'] = d3.min([controls['min_link_weight_percentile'], v - 0.01])
     }
     dvMin = controls['min_link_weight_percentile'] - vMinPrev
     vMinPrev = controls['min_link_weight_percentile']
@@ -725,6 +725,11 @@ function vis(new_controls) {
     // Size and weight norms, colors and degrees
     computeMasterGraphGlobals();
 
+    // Check for really weak links
+    if (minLinkWeight < 1e-9) {
+      Swal.fire({ text: "Found links with weight < 1e-9. This may cause trouble with precision.", type: "warning" });
+    }
+
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
@@ -738,7 +743,7 @@ function vis(new_controls) {
 
     // Reset all thresholds ...
     controls["min_link_weight_percentile"] = 0
-    controls["max_link_weight_percentile"] = 100
+    controls["max_link_weight_percentile"] = 1
 
     // Run the restart if all of this was OK
     restart();
@@ -777,6 +782,11 @@ function vis(new_controls) {
     // Size and weight norms, colors and degrees
     computeMasterGraphGlobals();
 
+    // Check for really weak links
+    if (minLinkWeight < 1e-9) {
+      Swal.fire({ text: "Found links with weight < 1e-9. This may cause trouble with precision.", type: "warning" });
+    }
+
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
@@ -789,8 +799,8 @@ function vis(new_controls) {
     window.negativeGraph = { 'nodes': [], 'links': [] }
 
     // Reset all thresholds ...
-    controls["Min. link weight %"] = 0
-    controls["Max. link weight %"] = 100
+    controls["min_link_weight_percentile"] = 0
+    controls["max_link_weight_percentile"] = 1
 
     restart();
   }
@@ -885,17 +895,13 @@ function vis(new_controls) {
   }
 
   function shave() {
-    // Compute what number a percentage corresponds to
-    var intervalRange = function(percent) {
-      return percent / 100 * (maxLinkWeight - minLinkWeight) + minLinkWeight
-    }
 
     // MIN SLIDER MOVES RIGHT or MAX SLIDER MOVES LEFT
     if (dvMin > 0 || dvMax < 0) {
 
       // Remove links and update `nodeStrengths
       graph['links'] = graph.links.filter(l => {
-        var withinThreshold = (intervalRange(controls['min_link_weight_percentile']) <= l.weight) && (l.weight <= intervalRange(controls['max_link_weight_percentile']))
+        let withinThreshold = (controls['min_link_weight_percentile'] <= getPercentile(l.weight, linkWeightOrder)) && (getPercentile(l.weight, linkWeightOrder) <= controls['max_link_weight_percentile'])
         if (!withinThreshold) {
           nodeStrengths[l.source.id] -= valIfValid(l.weight, 1);
           nodeStrengths[l.target.id] -= valIfValid(l.weight, 1);
@@ -907,7 +913,7 @@ function vis(new_controls) {
       // Remove singleton nodes
       if (!controls['display_singleton_nodes']) {
         graph['nodes'] = graph.nodes.filter(n => {
-          var keepNode = nodeStrengths[n.id] >= minLinkWeight;
+          let keepNode = nodeStrengths[n.id] >= minLinkWeight;
           if (!keepNode) {
             negativeGraph.nodes.push(n)
           }
@@ -927,7 +933,7 @@ function vis(new_controls) {
 
       // Add links back and update `nodeStrengths`
       negativeGraph['links'] = negativeGraph.links.filter(l => {
-        var withinThreshold = (intervalRange(controls['min_link_weight_percentile']) <= l.weight) && (l.weight <= intervalRange(controls['max_link_weight_percentile']))
+        var withinThreshold = (controls['min_link_weight_percentile'] <= getPercentile(l.weight, linkWeightOrder)) && (getPercentile(l.weight, linkWeightOrder) <= controls['max_link_weight_percentile'])
         if (withinThreshold) {
           nodeStrengths[l.source.id] += valIfValid(l.weight, 1);
           nodeStrengths[l.target.id] += valIfValid(l.weight, 1);
