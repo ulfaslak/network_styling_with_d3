@@ -127,7 +127,7 @@ function vis(new_controls) {
     'node_charge': -30,
     'node_gravity': 0.1,
     'link_distance': 10,
-    'link_distance_unevenness': 0.01,
+    'link_distance_variation': 0.01,
     'node_collision': false,
     'wiggle_nodes': false,
     'freeze_nodes': false,
@@ -139,12 +139,12 @@ function vis(new_controls) {
     'scale_node_size_by_strength': false,
     'node_size': 10,
     'node_stroke_width': 0.5,
-    'node_size_unevenness': 0.5,
+    'node_size_variation': 0.5,
     // Links
     'link_color': '#7c7c7c',
     'link_width': 5,
     'link_alpha': 0.5,
-    'link_width_unevenness': 0.5,
+    'link_width_variation': 0.5,
     // Thresholding
     'display_singleton_nodes': false,
     'min_link_weight_percentile': 0.0,
@@ -241,7 +241,7 @@ function vis(new_controls) {
   }
 
   function drawLink(d) {
-    var thisLinkWidth = valIfValid(d.weight, 1) ** (controls['link_width_unevenness']) * linkWidthNorm * controls['link_width'];
+    var thisLinkWidth = valIfValid(d.weight, 1) ** (controls['link_width_variation']) * linkWidthNorm * controls['link_width'];
     context.beginPath();
     context.moveTo(zoomScaler(d.source.x), zoomScaler(d.source.y));
     context.lineTo(zoomScaler(d.target.x), zoomScaler(d.target.y));
@@ -251,7 +251,7 @@ function vis(new_controls) {
 
   function drawNode(d) {
     // Node
-    var thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_unevenness']) * nodeSizeNorm * controls['node_size'];
+    var thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_variation']) * nodeSizeNorm * controls['node_size'];
     context.beginPath();
     context.moveTo(zoomScaler(d.x) + thisNodeSize * (controls['zoom'] + (controls['zoom'] - 1)), zoomScaler(d.y));
     context.arc(zoomScaler(d.x), zoomScaler(d.y), thisNodeSize * (controls['zoom'] + (controls['zoom'] - 1)), 0, 2 * Math.PI);
@@ -262,7 +262,7 @@ function vis(new_controls) {
 
   function drawText(d) {
     if (controls['display_node_labels'] || d.id == hoveredNode || selectedNodes.includes(d.id)) {
-      var thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_unevenness']) * nodeSizeNorm * controls['node_size'];
+      var thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_variation']) * nodeSizeNorm * controls['node_size'];
       context.font = clip(thisNodeSize * controls['zoom'] * 2, 10, 20) + "px Helvetica"
       context.fillStyle = controls['node_label_color']
       context.fillText(d.id, zoomScaler(d.x), zoomScaler(d.y))
@@ -338,33 +338,33 @@ function vis(new_controls) {
   });
 
   // Titles
-  var title1_1 = "URL of eligible file in either JSON or CSV format"
-  var title1_2 = "Upload a network from your computer in either JSON or CSV format"
-  var title1_3 = "Download the network as a PNG image"
-  var title1_4 = "Post all calculated node and link properties back to Python.";
-  var title1_5 = "Zoom in or out"
-  var title2_1 = "Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
-  var title2_2 = "Push the nodes more or less towards the center of the canvas"
-  var title2_3 = "The optimal link distance that the force layout algorithm will try to achieve for each link"
-  var title2_4 = "Tweak the link distance scaling function. Increase to contract strong links. Most effectful when 'Link distance' is large."
-  var title2_5 = "Make it harder for nodes to overlap"
-  var title2_6 = "Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
-  var title2_7 = "Set force layout algorithm temperature to zero, causing the nodes to freeze in their position."
-  var title3_1 = 'Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Fill color" will continuously change the color of all groups'
-  var title3_2 = "The color of the ring around nodes"
-  var title3_3 = "The color of node labels"
-  var title3_4 = "Whether to show labels or not"
-  var title3_5 = "Rescale the size of each node relative to their strength (weighted degree)"
-  var title3_6 = "Change the size of all nodes"
-  var title3_7 = "Change the width of the ring around nodes"
-  var title3_8 = "Tweak the node size scaling function. Increase to make big nodes bigger and small nodes smaller. Useful for highlighting densely connected nodes."
-  var title4_1 = "The color of links"
-  var title4_2 = "Change the width of all links"
-  var title4_3 = "How transparent links should be. Useful in large dense networks"
-  var title4_4 = "Tweak the link width scaling function. Increase to make wide links wider and narrow links narrower. Useful for highlighting strong connections"
-  var title5_1 = "Whether or not to show links that have zero degree"
-  var title5_2 = "Lower percentile threshold on link weight"
-  var title5_3 = "Upper percentile threshold on link weight"
+  var title1_1 = "Path to file: URL of eligible file in either JSON or CSV format"
+  var title1_2 = "Upload file: Upload a network from your computer in either JSON or CSV format"
+  var title1_3 = "Download figure: Download the network as a PNG image"
+  var title1_4 = "Post to Python: Post all calculated node and link properties and image (optional) back to Python.";
+  var title1_5 = "Zoom: Zoom in or out"
+  var title2_1 = "Charge: Each node has negative charge and thus repel one another (like electrons). The more negative this charge is, the greater the repulsion"
+  var title2_2 = "Gravity: Push the nodes more or less towards the center of the canvas"
+  var title2_3 = "Link distance: The optimal link distance that the force layout algorithm will try to achieve for each link"
+  var title2_4 = "Link distance variation: Tweak the link distance scaling function. Increase to contract strong links. Most effectful when 'Link distance' is large."
+  var title2_5 = "Collision: Make it harder for nodes to overlap"
+  var title2_6 = "Wiggle: Increase the force layout algorithm temperature to make the nodes wiggle. Useful for big networks that need some time for the nodes to settle in the right positions"
+  var title2_7 = "Freeze: Set force layout algorithm temperature to zero, causing the nodes to freeze in their position."
+  var title3_1 = 'Fill: Node color(s). If nodes have "group" attributes (unless groups are named after colors) each group is given a random color. Changing "Fill color" will continuously change the color of all groups'
+  var title3_2 = "Stroke: The color of the ring around nodes"
+  var title3_3 = "Label color: The color of node labels"
+  var title3_4 = "Display labels: Whether to show labels or not"
+  var title3_5 = "Size by strength: Rescale the size of each node relative to their strength (weighted degree)"
+  var title3_6 = "Size: Change the size of all nodes"
+  var title3_7 = "Stroke width: Change the width of the ring around nodes"
+  var title3_8 = "Size variation: Tweak the node size scaling function. Increase to make big nodes bigger and small nodes smaller. Useful for highlighting densely connected nodes."
+  var title4_1 = "Color: The color of links"
+  var title4_2 = "Width: Change the width of all links"
+  var title4_3 = "Alpha: How transparent links should be. Useful in large dense networks"
+  var title4_4 = "Width variation: Tweak the link width scaling function. Increase to make wide links wider and narrow links narrower. Useful for highlighting strong connections"
+  var title5_1 = "Singleton nodes: Whether or not to show links that have zero degree"
+  var title5_2 = "Min. link percentile: Lower percentile threshold on link weight"
+  var title5_3 = "Max. link percentile: Upper percentile threshold on link weight"
 
   // Control panel
   var gui = new dat.GUI({ autoPlace: false });
@@ -387,7 +387,7 @@ function vis(new_controls) {
   f2.add(controls, 'node_charge', -100, 0).name('Charge').onChange(function(v) { inputtedCharge(v) }).title(title2_1);
   f2.add(controls, 'node_gravity', 0, 1).name('Gravity').onChange(function(v) { inputtedGravity(v) }).title(title2_2);
   f2.add(controls, 'link_distance', 0.1, 50).name('Link distance').onChange(function(v) { inputtedDistance(v) }).title(title2_3);
-  f2.add(controls, 'link_distance_unevenness', 0, 1).name('Link distance unevenness').onChange(function(v) { inputtedDistanceScaling(v) }).title(title2_4);
+  f2.add(controls, 'link_distance_variation', 0, 1).name('Link distance variation').onChange(function(v) { inputtedDistanceScaling(v) }).title(title2_4);
   f2.add(controls, 'node_collision', false).name('Collision').onChange(function(v) { inputtedCollision(v) }).title(title2_5);
   f2.add(controls, 'wiggle_nodes', false).name('Wiggle').onChange(function(v) { inputtedReheat(v) }).listen().title(title2_6);
   f2.add(controls, 'freeze_nodes', false).name('Freeze').onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
@@ -401,14 +401,14 @@ function vis(new_controls) {
   f3.add(controls, 'scale_node_size_by_strength', false).name('Size by strength').onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
   f3.add(controls, 'node_size', 0, 50).name('Size').onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
   f3.add(controls, 'node_stroke_width', 0, 10).name('Stroke width').onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
-  f3.add(controls, 'node_size_unevenness', 0., 3.).name('Size unevenness').onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
+  f3.add(controls, 'node_size_variation', 0., 3.).name('Size variation').onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
 
   // Links
   var f4 = gui.addFolder('Links'); f4.open();
   f4.addColor(controls, 'link_color', controls['link_color']).name('Color').onChange(function(v) { inputtedLinkStroke(v) }).title(title4_1);
   f4.add(controls, 'link_width', 0.01, 30).name('Width').onChange(function(v) { inputtedLinkWidth(v) }).title(title4_2);
   f4.add(controls, 'link_alpha', 0, 1).name('Alpha').onChange(function(v) { inputtedLinkAlpha(v) }).title(title4_3);
-  f4.add(controls, 'link_width_unevenness', 0., 3.).name('Width unevenness').onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
+  f4.add(controls, 'link_width_variation', 0., 3.).name('Width variation').onChange(function(v) { inputtedLinkWidthExponent(v) }).title(title4_4);
 
   // Thresholding
   var f5 = gui.addFolder('Thresholding'); f5.close();
@@ -426,7 +426,7 @@ function vis(new_controls) {
   function computeNodeRadii(d) {
     var thisNodeSize = nodeSizeNorm * controls['node_size'];
     if (d.size) {
-      thisNodeSize *= (d.size) ** (controls['node_size_unevenness']);
+      thisNodeSize *= (d.size) ** (controls['node_size_variation']);
     }
     return thisNodeSize
   }
@@ -457,9 +457,9 @@ function vis(new_controls) {
   }
 
   function inputtedDistance(v) {
-    if (isWeighted && linkWeightOrder.length > 1 && controls['link_distance_unevenness'] > 0) {
+    if (isWeighted && linkWeightOrder.length > 1 && controls['link_distance_variation'] > 0) {
       simulation.force("link").distance(d => {
-        return (1 - getPercentile(d.weight, linkWeightOrder)) ** controls['link_distance_unevenness'] * v
+        return (1 - getPercentile(d.weight, linkWeightOrder)) ** controls['link_distance_variation'] * v
       });
     } else {
       simulation.force("link").distance(v);
@@ -579,7 +579,7 @@ function vis(new_controls) {
   }
 
   function inputtedNodeSizeExponent(v) {
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_unevenness'])
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_variation'])
     if (controls['node_collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
       simulation.alpha(1).restart();
@@ -589,7 +589,7 @@ function vis(new_controls) {
   }
 
   function inputtedLinkWidthExponent(v) {
-    linkWidthNorm = 1 / maxLinkWeight ** (controls['link_width_unevenness'])
+    linkWidthNorm = 1 / maxLinkWeight ** (controls['link_width_variation'])
     simulation.restart();
   }
 
@@ -884,14 +884,14 @@ function vis(new_controls) {
     } else {
       maxNodeSize = d3.max(masterGraph.nodes.map(n => valIfValid(n.size, 0)));  // Nodes are given size if they don't have size on load
     }
-    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_unevenness'])
+    nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_variation'])
   }
 
   function recomputeLinkNorms() {
     linkWeightOrder = removeConsecutiveDuplicates(masterGraph.links.map(l => valIfValid(l.weight, 1)).sort((a, b) => a - b))
     minLinkWeight = linkWeightOrder[0]
     maxLinkWeight = linkWeightOrder[linkWeightOrder.length - 1]
-    linkWidthNorm = 1 / maxLinkWeight ** controls['link_width_unevenness']
+    linkWidthNorm = 1 / maxLinkWeight ** controls['link_width_variation']
   }
 
   function shave() {
@@ -1052,7 +1052,7 @@ function vis(new_controls) {
       network_properties.nodes = [];
 
       graph.links.forEach(function(d){
-        let thisLinkWidth = valIfValid(d.weight, 1) ** (controls['link_width_unevenness']) 
+        let thisLinkWidth = valIfValid(d.weight, 1) ** (controls['link_width_variation']) 
                             * linkWidthNorm 
                             * controls['link_width']
                             * controls['zoom'];
@@ -1064,7 +1064,7 @@ function vis(new_controls) {
         });
       });
       graph.nodes.forEach(function(d){
-        let thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_unevenness']) 
+        let thisNodeSize = valIfValid(d.size, 1) ** (controls['node_size_variation']) 
                             * nodeSizeNorm 
                             * controls['node_size']
                             * (2*controls['zoom']-1);
