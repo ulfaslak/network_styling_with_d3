@@ -127,7 +127,7 @@ function vis(new_controls) {
     'node_charge': -30,
     'node_gravity': 0.1,
     'link_distance': 10,
-    'link_distance_variation': 0.01,
+    'link_distance_variation': 0,
     'node_collision': false,
     'wiggle_nodes': false,
     'freeze_nodes': false,
@@ -387,7 +387,7 @@ function vis(new_controls) {
   f2.add(controls, 'node_charge', -100, 0).name('Charge').onChange(function(v) { inputtedCharge(v) }).title(title2_1);
   f2.add(controls, 'node_gravity', 0, 1).name('Gravity').onChange(function(v) { inputtedGravity(v) }).title(title2_2);
   f2.add(controls, 'link_distance', 0.1, 50).name('Link distance').onChange(function(v) { inputtedDistance(v) }).title(title2_3);
-  f2.add(controls, 'link_distance_variation', 0, 1).name('Link distance variation').onChange(function(v) { inputtedDistanceScaling(v) }).title(title2_4);
+  f2.add(controls, 'link_distance_variation', 0, 1).name('Link distance variation').step(0.01).onChange(function(v) { inputtedDistanceScaling(v) }).title(title2_4);
   f2.add(controls, 'node_collision', false).name('Collision').onChange(function(v) { inputtedCollision(v) }).title(title2_5);
   f2.add(controls, 'wiggle_nodes', false).name('Wiggle').onChange(function(v) { inputtedReheat(v) }).listen().title(title2_6);
   f2.add(controls, 'freeze_nodes', false).name('Freeze').onChange(function(v) { inputtedFreeze(v) }).listen().title(title2_7);
