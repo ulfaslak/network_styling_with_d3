@@ -527,6 +527,7 @@ function vis(new_controls) {
   }
 
   function inputtedShowLabels(v) {
+    selectedNodes = [];
     simulation.restart();
   }
 
