@@ -135,11 +135,11 @@ function vis(new_controls) {
     'node_fill_color': '#16a085',
     'node_stroke_color': '#000000',
     'node_label_color': '#000000',
-    'display_node_labels': false,
-    'scale_node_size_by_strength': false,
     'node_size': 10,
     'node_stroke_width': 0.5,
     'node_size_variation': 0.5,
+    'display_node_labels': false,
+    'scale_node_size_by_strength': false,
     // Links
     'link_color': '#7c7c7c',
     'link_width': 5,
@@ -206,7 +206,7 @@ function vis(new_controls) {
       graph.links.forEach(drawLink);
       context.globalAlpha = 1.0
       context.strokeStyle = controls['node_stroke_color'];
-      context.lineWidth = controls['node_stroke_width'] * controls['zoom'];
+      context.lineWidth = controls['node_stroke_width'] < 1e-3 ? 1e-9 : controls['node_stroke_width'] * controls['zoom'];
       context.globalCompositeOperation = "source-over";
       graph.nodes.forEach(drawNode);
       graph.nodes.forEach(drawText);
@@ -397,11 +397,11 @@ function vis(new_controls) {
   f3.addColor(controls, 'node_fill_color', controls['node_fill_color']).name('Fill').onChange(function(v) { inputtedNodeFill(v) }).title(title3_1);
   f3.addColor(controls, 'node_stroke_color', controls['node_stroke_color']).name('Stroke').onChange(function(v) { inputtedNodeStroke(v) }).title(title3_2);
   f3.addColor(controls, 'node_label_color', controls['node_label_color']).name('Label color').onChange(function(v) { inputtedTextStroke(v) }).title(title3_3);
-  f3.add(controls, 'display_node_labels', false).name('Display labels').onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
-  f3.add(controls, 'scale_node_size_by_strength', false).name('Size by strength').onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
   f3.add(controls, 'node_size', 0, 50).name('Size').onChange(function(v) { inputtedNodeSize(v) }).title(title3_6);
   f3.add(controls, 'node_stroke_width', 0, 10).name('Stroke width').onChange(function(v) { inputtedNodeStrokeSize(v) }).title(title3_7);
   f3.add(controls, 'node_size_variation', 0., 3.).name('Size variation').onChange(function(v) { inputtedNodeSizeExponent(v) }).title(title3_8);
+  f3.add(controls, 'display_node_labels', false).name('Display labels').onChange(function(v) { inputtedShowLabels(v) }).title(title3_4);
+  f3.add(controls, 'scale_node_size_by_strength', false).name('Size by strength').onChange(function(v) { inputtedNodeSizeByStrength(v) }).title(title3_5);
 
   // Links
   var f4 = gui.addFolder('Links'); f4.open();
