@@ -118,7 +118,7 @@ function vis(new_controls) {
   // ---------- //
 
   // Control variables
-  var controls = {
+  window.controls = {
     // Input/output
     'file_path': "",
     'download_figure': download,
@@ -224,18 +224,23 @@ function vis(new_controls) {
   }
 
   function dragstarted() {
-    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    console.log("dragstarted")
+    if (!controls['freeze_nodes']) simulation.alphaTarget(0.3);
+    simulation.restart();
     d3.event.subject.fx = d3.event.subject.x;
     d3.event.subject.fy = d3.event.subject.y;
   }
 
   function dragged() {
+    console.log("dragged")
     d3.event.subject.fx = zoomScaler.invert(event.clientX - canvasOffsetX);
     d3.event.subject.fy = zoomScaler.invert(event.clientY - canvasOffsetY);
+    if (controls['freeze_nodes']) simulation.restart();
   }
 
   function dragended() {
-    if (!d3.event.active) simulation.alphaTarget(0);
+    console.log("dragended")
+    if (!controls['freeze_nodes']) simulation.alphaTarget(0);
     d3.event.subject.fx = null;
     d3.event.subject.fy = null;
   }
@@ -493,10 +498,10 @@ function vis(new_controls) {
   function inputtedFreeze(v) {
     if (v) {
       controls['wiggle_nodes'] = !v
+      simulation.alpha(0);
     } else {
-      simulation.alphaTarget(0)
+      simulation.alpha(0.3).alphaTarget(0).restart();
     }
-    v ? simulation.stop() : simulation.restart()
   }
 
 
