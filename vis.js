@@ -212,7 +212,11 @@ function vis(new_controls) {
       graph.nodes.forEach(drawText);
     }
 
-    simulation.alpha(!nodePositions ? 1 : 0).restart();
+    if (!nodePositions && !controls['freeze_nodes']) {
+      simulation.alpha(1).restart();
+    } else {
+      simulation.alpha(0).restart();
+    }
   }
 
 
@@ -453,12 +457,14 @@ function vis(new_controls) {
   function inputtedCharge(v) {
     simulation.force("charge").strength(+v);
     simulation.alpha(1).restart();
+    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
   }
 
   function inputtedGravity(v) {
     simulation.force("x").strength(+v);
     simulation.force("y").strength(+v);
     simulation.alpha(1).restart();
+    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
   }
 
   function inputtedDistance(v) {
@@ -470,23 +476,23 @@ function vis(new_controls) {
       simulation.force("link").distance(v);
     }
     simulation.alpha(1).restart();
+    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
   }
 
   function inputtedDistanceScaling(v) {
-    window.distdist = []
     if (isWeighted && linkWeightOrder.length > 1) {
       simulation.force("link").distance(d => {
-        let val = (1 - getPercentile(d.weight, linkWeightOrder)) ** v * controls['link_distance']
-        distdist.push(val)
-        return val
+        return (1 - getPercentile(d.weight, linkWeightOrder)) ** v * controls['link_distance']
       });
       simulation.alpha(1).restart();
+      if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
     }
   }
 
   function inputtedCollision(v) {
     simulation.force("collide").radius(function(d) { return controls['node_collision'] * computeNodeRadii(d) });
     simulation.alpha(1).restart();
+    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
   }
 
   function inputtedReheat(v) {
