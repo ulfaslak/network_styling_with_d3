@@ -228,7 +228,6 @@ function vis(new_controls) {
   }
 
   function dragstarted() {
-    console.log("dragstarted")
     if (!controls['freeze_nodes']) simulation.alphaTarget(0.3);
     simulation.restart();
     d3.event.subject.fx = d3.event.subject.x;
@@ -236,14 +235,12 @@ function vis(new_controls) {
   }
 
   function dragged() {
-    console.log("dragged")
     d3.event.subject.fx = zoomScaler.invert(event.clientX - canvasOffsetX);
     d3.event.subject.fy = zoomScaler.invert(event.clientY - canvasOffsetY);
     if (controls['freeze_nodes']) simulation.restart();
   }
 
   function dragended() {
-    console.log("dragended")
     if (!controls['freeze_nodes']) simulation.alphaTarget(0);
     d3.event.subject.fx = null;
     d3.event.subject.fy = null;
