@@ -15,18 +15,11 @@
 		<div class="child_div2_child_mid"></div>
 		<div class="infotext_container">
 			<p class='sidebar-text'>
-			    <b>This is a tool</b> for experimenting with network layouts, powered by the <a href="https://github.com/d3/d3-force">d3-force</a> API. You may find it useful if you, like me, feel that Gephi is too heavy-weight, networkx is too ugly and writing d3 code everytime you want to make a pretty network is too much work.
-			    <br><br>
-			    <b>To start using it</b> slide things left and right in the controls menu. You can import your own data by linking to it or uploading it, and once you are happy with how it looks you can download it.
-			    <br><br>
-			    <b>Data should be</b> either JSON or CSV, and there are some simple rules for formatting. I suggest you mimic the formatting of these example files (<a href="https://gist.githubusercontent.com/ulfaslak/6be66de1ac3288d5c1d9452570cbba5a/raw/4cab5036464800e51ce59fc088688e9821795efb/miserables.json">JSON</a>, <a href="https://gist.githubusercontent.com/ulfaslak/66a0baa60b6fe1a5e4cc0891b2b1017d/raw/1cba9e4fbf3d0cec7c6c4f0ff6ab3fb54609f2d3/miserables.csv">CSV</a>). Note that 'size' attribute and 'weight' column/attribute are optional in either format.
-			    <br><br>
-			    <b>Most of the attributes</b> in the control panel are self-explanatory. The 'Physics' attributes relate to variables in the d3-force API, while the '... scaling exponent' attributes control <i>the power to which nodes sizes and link weights are raised</i> before rendering. For example, if 'node scaling exponent' is 0.5, the size of rendered nodes is the half power (which is the square root) of the 'size' attribute given by the input, such that node area is proportional to 'size' attribute. If 1, node radius is propotional with 'size'. If negative, nodes with a large 'size' attribute become small and vice versa. But for simplicity just think of the exponent as a parameter for tuning the "unevenness" of node sizes or link weights.
-			    <br><br>
-			    <b>Parameter presets</b> can be saved, exported and reset. This all happens in the top bar of the control panel. It's useful if you have found a style you like and want save it for later. What you can do then is click 'New' and give that parameter preset a name. When you load a new network (or close the browser and come back) your browser will remember those values. If you want to export your preset as JSON, you can click the &#9881icon.
-
-			    <br><br>
-				<b>Made by</b> <a href="http://ulfaslak.com">Ulf Aslak</a>. Code available on <a href="https://github.com/ulfaslak/network_styling_with_d3">Github</a>. If you find any bugs, or have suggestions for improvements or further developments, please get in touch.
+				Netwulf was with love by <a href="http://ulfaslak.com">Ulf Aslak</a> and <a href="http://benmaier.org/">Benjamin F. Maier</a>.
+				If you use this software please <a href="https://joss.theoj.org/papers/xxx">cite our paper</a>. 
+				The code for this project is available on Github. The Python package <a href="https://github.com/benmaier/netwulf/">netwulf</a> is an API to the <a href="https://github.com/ulfaslak/network_styling_with_d3">network_styling_with_d3</a> web app.
+				Documentation is available <a href="https://netwulf.readthedocs.io/en/latest/">here</a>.
+				<br>
 			</p>
 		</div>
 	</div>
