@@ -212,10 +212,10 @@ function vis(new_controls) {
       graph.nodes.forEach(drawText);
     }
 
-    if (!nodePositions && !controls['freeze_nodes']) {
-      simulation.alpha(1).restart();
-    } else {
+    if (nodePositions || controls['freeze_nodes']) {
       simulation.alpha(0).restart();
+    } else {
+      simulation.alpha(1).restart();
     }
   }
 
@@ -228,6 +228,7 @@ function vis(new_controls) {
   }
 
   function dragstarted() {
+    console.log("dragstarted")
     if (!controls['freeze_nodes']) simulation.alphaTarget(0.3);
     simulation.restart();
     d3.event.subject.fx = d3.event.subject.x;
@@ -235,12 +236,14 @@ function vis(new_controls) {
   }
 
   function dragged() {
+    console.log("dragged")
     d3.event.subject.fx = zoomScaler.invert(event.clientX - canvasOffsetX);
     d3.event.subject.fy = zoomScaler.invert(event.clientY - canvasOffsetY);
     if (controls['freeze_nodes']) simulation.restart();
   }
 
   function dragended() {
+    console.log("dragended")
     if (!controls['freeze_nodes']) simulation.alphaTarget(0);
     d3.event.subject.fx = null;
     d3.event.subject.fy = null;
@@ -504,6 +507,7 @@ function vis(new_controls) {
       simulation.alpha(0);
     } else {
       simulation.alpha(0.3).alphaTarget(0).restart();
+      nodePositions = false;
     }
   }
 
@@ -846,10 +850,21 @@ function vis(new_controls) {
       }
     }
     if (nodePositions) {
-      masterGraph.nodes.forEach((d, i) => {
-        d['x'] = zoomScaler.invert(d.x)
-        d['y'] = zoomScaler.invert(d.y)
-      })
+      if (masterGraph.hasOwnProperty('xlim')) {
+        masterGraph.nodes.forEach((d, i) => {
+          d['x'] = zoomScaler.invert(d.x)
+          d['y'] = zoomScaler.invert(d.y)
+        }) 
+      } else {
+        let xVals = []; let yVals = [];
+        masterGraph.nodes.forEach(d => { xVals.push(d.x); yVals.push(d.y) })
+        let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([0, width])
+        let domainScalerY = d3.scaleLinear().domain([d3.min(yVals), d3.max(yVals)]).range([0, width])
+        masterGraph.nodes.forEach((d, i) => {
+          d['x'] = zoomScaler.invert(domainScalerX(d.x))
+          d['y'] = zoomScaler.invert(domainScalerY(d.y))
+        })
+      }
       controls['freeze_nodes'] = true;
     }
 
@@ -1065,11 +1080,11 @@ function vis(new_controls) {
                             * linkWidthNorm 
                             * controls['link_width']
                             * controls['zoom'];
-        //network_properties.links.push({ link: [d.source.id, d.target.id], width: thisLinkWidth });
         network_properties.links.push({
           source: d.source.id,
           target: d.target.id,
-          width: thisLinkWidth
+          width: thisLinkWidth,
+          weight: d.weight
         });
       });
       graph.nodes.forEach(function(d){
