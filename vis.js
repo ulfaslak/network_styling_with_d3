@@ -8,6 +8,12 @@ function vis(new_controls) {
 
   var isLocal = window.location['href'].includes("http://localhost");
   var isWeb = window.location['href'].includes("https://ulfaslak");
+  var isTest = window.location['href'].includes("pytest");
+
+
+  // if this is a test, call the postData function after 5 seconds
+  if (isTest)
+    d3.timeout(postData, 5000);
 
 
   // Canvas //
