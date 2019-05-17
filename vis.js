@@ -8,6 +8,12 @@ function vis(new_controls) {
 
   var isLocal = window.location['href'].includes("http://localhost");
   var isWeb = window.location['href'].includes("https://ulfaslak");
+  var isTest = window.location['href'].includes("pytest");
+
+
+  // if this is a test, call the postData function after 5 seconds
+  if (isTest)
+    d3.timeout(postData, 5000);
 
 
   // Canvas //
@@ -155,7 +161,7 @@ function vis(new_controls) {
   if (isLocal) controls['post_to_python'] = postData;
   if (isWeb)   controls['upload_file'] = uploadFile;
     
-  // Ben, can you explain this one?
+  // Overwrite default controls with inputted controls
   d3.keys(new_controls).forEach(key => {
     controls[key] = new_controls[key];
   });
@@ -429,7 +435,8 @@ function vis(new_controls) {
   // Utility functions //
   // ----------------- //
 
-  logscaler = d3.scaleLog()
+  // The zoomScaler converts a simulation coordinate (what we don't see) to a
+  // canvas coordinate (what we do see), and zoomScaler.invert does the opposite.
   zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['zoom']), controls['zoom'] * width])
 
   function computeNodeRadii(d) {
@@ -852,14 +859,14 @@ function vis(new_controls) {
     if (nodePositions) {
       if (masterGraph.hasOwnProperty('xlim')) {
         masterGraph.nodes.forEach((d, i) => {
-          d['x'] = zoomScaler.invert(d.x)
-          d['y'] = zoomScaler.invert(d.y)
+          d['x'] = zoomScaler.invert(d.x);
+          d['y'] = zoomScaler.invert(d.y);
         }) 
       } else {
         let xVals = []; let yVals = [];
         masterGraph.nodes.forEach(d => { xVals.push(d.x); yVals.push(d.y) })
-        let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([0, width])
-        let domainScalerY = d3.scaleLinear().domain([d3.min(yVals), d3.max(yVals)]).range([0, width])
+        let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([width * 0.25, width * (1 - 0.25)])
+        let domainScalerY = d3.scaleLinear().domain([d3.min(yVals), d3.max(yVals)]).range([width * 0.25, width * (1 - 0.25)])
         masterGraph.nodes.forEach((d, i) => {
           d['x'] = zoomScaler.invert(domainScalerX(d.x))
           d['y'] = zoomScaler.invert(domainScalerY(d.y))
