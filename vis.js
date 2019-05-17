@@ -521,9 +521,9 @@ function vis(new_controls) {
 
   // Styling
   function inputtedNodeFill(v) {
-    window.dr = parseInt(v.slice(1, 3), 16) - parseInt(controls['node_fill_color'].slice(1, 3), 16)
-    window.dg = parseInt(v.slice(3, 5), 16) - parseInt(controls['node_fill_color'].slice(3, 5), 16)
-    window.db = parseInt(v.slice(5, 7), 16) - parseInt(controls['node_fill_color'].slice(5, 7), 16)
+    var dr = hexToInt(v.slice(1, 3)) - hexToInt(referenceColor.slice(1, 3))
+    var dg = hexToInt(v.slice(3, 5)) - hexToInt(referenceColor.slice(3, 5))
+    var db = hexToInt(v.slice(5, 7)) - hexToInt(referenceColor.slice(5, 7))
     for (var g of d3.keys(activeSwatch)) {
       var r_ = bounceModulus(parseInt(referenceSwatch[g].slice(1, 3), 16) + dr, 0, 255);
       var g_ = bounceModulus(parseInt(referenceSwatch[g].slice(3, 5), 16) + dg, 0, 255);
@@ -889,6 +889,7 @@ function vis(new_controls) {
       }
     }
     window.referenceSwatch = _.cloneDeep(activeSwatch)
+    window.referenceColor = controls['node_fill_color']
 
     // Immutable node degree (unless strength is toggled)
     masterNodeStrengths = {}; masterGraph.nodes.map(n => masterNodeStrengths[n.id] = 0)
@@ -1028,6 +1029,10 @@ function vis(new_controls) {
     var hv = v.toString(16)
     if (hv.length == 1) hv = "0" + hv;
     return hv;
+  }
+
+  function hexToInt(hex) {
+    return parseInt(hex, 16)
   }
 
   function validColor(stringToTest) {
