@@ -753,13 +753,18 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
+    // Container for part of the network which are not in `graph` (for faster thresholding)
+    window.negativeGraph = { 'nodes': [], 'links': [] }
+
     // If 'scale_node_size_by_strength' is toggled, then node sizes need to follow computed degrees
     if (controls['scale_node_size_by_strength']) {
       graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
     }
 
-    // Container for part of the network which are not in `graph` (for faster thresholding)
-    window.negativeGraph = { 'nodes': [], 'links': [] }
+    // If 'display_singleton_nodes' is untoggled then the graph should be updated
+    if (!controls['display_singleton_nodes']) {
+      inputtedShowSingletonNodes(false)
+    }
 
     // Reset all thresholds ...
     controls["min_link_weight_percentile"] = 0
