@@ -152,7 +152,7 @@ function vis(new_controls) {
     'link_alpha': 0.5,
     'link_width_variation': 0.5,
     // Thresholding
-    'display_singleton_nodes': false,
+    'display_singleton_nodes': true,
     'min_link_weight_percentile': 0.0,
     'max_link_weight_percentile': 1.0
   };
@@ -427,7 +427,7 @@ function vis(new_controls) {
 
   // Thresholding
   var f5 = gui.addFolder('Thresholding'); f5.close();
-  f5.add(controls, 'display_singleton_nodes', false).name('Singleton nodes').onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
+  f5.add(controls, 'display_singleton_nodes', true).name('Singleton nodes').onChange(function(v) { inputtedShowSingletonNodes(v) }).title(title5_1);
   f5.add(controls, 'min_link_weight_percentile', 0, 0.99).name('Min. link percentile').step(0.01).onChange(function(v) { inputtedMinLinkWeight(v) }).listen().title(title5_2);
   f5.add(controls, 'max_link_weight_percentile', 0.01, 1).name('Max. link percentile').step(0.01).onChange(function(v) { inputtedMaxLinkWeight(v) }).listen().title(title5_3);
 
@@ -857,16 +857,11 @@ function vis(new_controls) {
       }
     }
     if (nodePositions) {
-      if (masterGraph.hasOwnProperty('xlim')) {
-        masterGraph.nodes.forEach((d, i) => {
-          d['x'] = zoomScaler.invert(d.x);
-          d['y'] = zoomScaler.invert(d.y);
-        }) 
-      } else {
+      if (masterGraph.rescale || typeof (masterGraph.rescale) === 'undefined') {
         let xVals = []; let yVals = [];
         masterGraph.nodes.forEach(d => { xVals.push(d.x); yVals.push(d.y) })
-        let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([width * 0.25, width * (1 - 0.25)])
-        let domainScalerY = d3.scaleLinear().domain([d3.min(yVals), d3.max(yVals)]).range([width * 0.25, width * (1 - 0.25)])
+        let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([width * 0.15, width * (1 - 0.15)])
+        let domainScalerY = d3.scaleLinear().domain([d3.min(yVals), d3.max(yVals)]).range([width * 0.15, width * (1 - 0.15)])
         masterGraph.nodes.forEach((d, i) => {
           d['x'] = zoomScaler.invert(domainScalerX(d.x))
           d['y'] = zoomScaler.invert(domainScalerY(d.y))
@@ -1101,8 +1096,10 @@ function vis(new_controls) {
                             * (2*controls['zoom']-1);
         network_properties.nodes.push({
           id: d.id,
-          x: zoomScaler(d.x),
-          y: zoomScaler(d.y), 
+          x: d.x,
+          y: d.y,
+          x_canvas: zoomScaler(d.x),
+          y_canvas: zoomScaler(d.y), 
           radius: thisNodeSize,
           color: computeNodeColor(d)
         });
