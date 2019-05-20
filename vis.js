@@ -862,7 +862,8 @@ function vis(new_controls) {
       }
     }
     if (nodePositions) {
-      if (masterGraph.rescale || typeof (masterGraph.rescale) === 'undefined') {
+      // Rescale node positions to fit nicely inside of canvas depending on xlim or rescale properties.
+      if (masterGraph.rescale || ((!masterGraph.hasOwnProperty('rescale') && !masterGraph.hasOwnProperty('xlim')))) {
         let xVals = []; let yVals = [];
         masterGraph.nodes.forEach(d => { xVals.push(d.x); yVals.push(d.y) })
         let domainScalerX = d3.scaleLinear().domain([d3.min(xVals), d3.max(xVals)]).range([width * 0.15, width * (1 - 0.15)])
