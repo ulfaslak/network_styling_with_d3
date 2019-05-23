@@ -141,11 +141,11 @@ function vis(new_controls) {
     'node_fill_color': '#16a085',
     'node_stroke_color': '#000000',
     'node_label_color': '#000000',
+    'display_node_labels': false,
+    'scale_node_size_by_strength': false,
     'node_size': 10,
     'node_stroke_width': 0.5,
     'node_size_variation': 0.5,
-    'display_node_labels': false,
-    'scale_node_size_by_strength': false,
     // Links
     'link_color': '#7c7c7c',
     'link_width': 5,
@@ -172,12 +172,14 @@ function vis(new_controls) {
   var simulation = d3.forceSimulation()
     .force("link", d3.forceLink()
       .id(d => d.id)
-      .distance(10)
+      .distance(controls['link_distance'])
     )
-    .force("charge", d3.forceManyBody())
+    .force("charge", d3.forceManyBody().strength(+controls['node_charge']))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .force("collide", d3.forceCollide(0).radius(d => controls['node_collision'] * computeNodeRadii(d)))
     .force("x", d3.forceX(width / 2)).force("y", d3.forceY(height / 2));
+  simulation.force("x").strength(+controls['node_gravity']);
+  simulation.force("y").strength(+controls['node_gravity']);
 
   // Start
   handleURL(controls['file_path']);
@@ -767,8 +769,9 @@ function vis(new_controls) {
     }
 
     // Reset all thresholds ...
-    controls["min_link_weight_percentile"] = 0
-    controls["max_link_weight_percentile"] = 1
+    // commented this out because it overwrites the predefined values in `config`
+    // controls["min_link_weight_percentile"] = 0
+    // controls["max_link_weight_percentile"] = 1
 
     // Run the restart if all of this was OK
     restart();
@@ -824,8 +827,9 @@ function vis(new_controls) {
     window.negativeGraph = { 'nodes': [], 'links': [] }
 
     // Reset all thresholds ...
-    controls["min_link_weight_percentile"] = 0
-    controls["max_link_weight_percentile"] = 1
+    // commented this out because it overwrites the predefined values in `config`
+    // controls["min_link_weight_percentile"] = 0
+    // controls["max_link_weight_percentile"] = 1
 
     restart();
   }
