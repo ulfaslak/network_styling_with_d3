@@ -568,14 +568,19 @@ function vis(new_controls) {
   }
 
   function inputtedNodeSizeByStrength(v) {
+    recomputeNodeNorms();
     if (v) {
-      graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
-      negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+        if (controls['display_singleton_nodes']){
+          graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+          negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+        } else {
+          graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+          negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+        }
     } else if (!v) {
       graph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
       negativeGraph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
     }
-    recomputeNodeNorms();
     simulation.restart();
   }
 
@@ -746,6 +751,7 @@ function vis(new_controls) {
 
     // Size and weight norms, colors and degrees
     computeMasterGraphGlobals();
+    console.log("minNonzeroNodeSize = "+minNonzeroNodeSize);
 
     // Check for really weak links
     if (minLinkWeight < 1e-9) {
@@ -758,14 +764,17 @@ function vis(new_controls) {
     // Container for part of the network which are not in `graph` (for faster thresholding)
     window.negativeGraph = { 'nodes': [], 'links': [] }
 
+    // If 'display_singleton_nodes' is untoggled then the graph should be updated
+    inputtedShowSingletonNodes(controls['display_singleton_nodes'])
+    inputtedNodeSizeByStrength(controls['scale_node_size_by_strength'])
+
     // If 'scale_node_size_by_strength' is toggled, then node sizes need to follow computed degrees
     if (controls['scale_node_size_by_strength']) {
-      graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
-    }
-
-    // If 'display_singleton_nodes' is untoggled then the graph should be updated
-    if (!controls['display_singleton_nodes']) {
-      inputtedShowSingletonNodes(false)
+      if (controls['display_singleton_nodes']){
+        graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+      } else {
+        graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+      }
     }
 
     // Reset all thresholds ...
@@ -809,6 +818,7 @@ function vis(new_controls) {
 
     // Size and weight norms, colors and degrees
     computeMasterGraphGlobals();
+    console.log("minNonzeroNodeSize = "+minNonzeroNodeSize);
 
     // Check for really weak links
     if (minLinkWeight < 1e-9) {
@@ -818,9 +828,17 @@ function vis(new_controls) {
     // Active graph that d3 operates on
     window.graph = _.cloneDeep(masterGraph)
 
+    // If 'display_singleton_nodes' is untoggled then the graph should be updated
+    inputtedShowSingletonNodes(controls['display_singleton_nodes'])
+    inputtedNodeSizeByStrength(controls['scale_node_size_by_strength'])
+
     // If 'scale_node_size_by_strength' is toggled, then node sizes need to follow computed degrees
     if (controls['scale_node_size_by_strength']) {
-      graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+      if (controls['display_singleton_nodes']){
+        graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+      } else {
+        graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+      }
     }
 
     // Container for part of the network which are not in `graph` (for faster thresholding)
@@ -918,8 +936,16 @@ function vis(new_controls) {
     // Compute node size norms
     if (controls['scale_node_size_by_strength']) {
       maxNodeSize = d3.max(d3.values(masterNodeStrengths))
+      let all_strengths = d3.values(masterNodeStrengths)
+      all_strengths.sort();
+      let i = -1;
+      do {
+        ++i;
+      } while (all_strengths[i] == 0.0);
+      minNonzeroNodeSize = all_strengths[i];
     } else {
       maxNodeSize = d3.max(masterGraph.nodes.map(n => valIfValid(n.size, 0)));  // Nodes are given size if they don't have size on load
+      minNonzeroNodeSize = maxNodeSize;
     }
     nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_variation'])
   }
@@ -960,8 +986,13 @@ function vis(new_controls) {
 
       // Resize nodes
       if (controls['scale_node_size_by_strength']) {
-        graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
-        negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+        if (controls['display_singleton_nodes']){
+          graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+          negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+        } else {
+          graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+          negativeGraph.nodes.forEach(n => { n.size = nodeStrengths[n.id] })
+        }
       }
     }
 
@@ -992,9 +1023,13 @@ function vis(new_controls) {
 
       // Resize nodes
       if (controls['scale_node_size_by_strength']) {
-        graph.nodes.forEach(n => {
-          n.size = nodeStrengths[n.id]
-        })
+        if (controls['scale_node_size_by_strength']){
+          graph.nodes.forEach(n => { n.size = nodeStrengths[n.id] > 0.0 ? nodeStrengths[n.id] : minNonzeroNodeSize })
+        } else {
+          graph.nodes.forEach(n => {
+            n.size = nodeStrengths[n.id]
+          })
+        }
       }
     }
   }
