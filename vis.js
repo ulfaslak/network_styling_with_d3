@@ -511,8 +511,10 @@ function vis(new_controls) {
 
   function inputtedCollision(v) {
     simulation.force("collide").radius(function(d) { return controls['node_collision'] * computeNodeRadii(d) });
-    simulation.alpha(1).restart();
-    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
+    if (!controls['freeze_nodes']) 
+      simulation.alpha(1)
+    
+    simulationSoftRestart();
   }
 
   function inputtedReheat(v) {
