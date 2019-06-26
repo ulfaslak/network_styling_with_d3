@@ -185,6 +185,22 @@ function vis(new_controls) {
   handleURL(controls['file_path']);
   uploadEvent();
 
+  function ticked() {
+
+    // draw
+    context.clearRect(0, 0, width, height);
+    context.strokeStyle = controls['link_color'];
+    context.globalAlpha = controls['link_alpha'];
+    context.globalCompositeOperation = "destination-over";
+    graph.links.forEach(drawLink);
+    context.globalAlpha = 1.0
+    context.strokeStyle = controls['node_stroke_color'];
+    context.lineWidth = controls['node_stroke_width'] < 1e-3 ? 1e-9 : controls['node_stroke_width'] * controls['zoom'];
+    context.globalCompositeOperation = "source-over";
+    graph.nodes.forEach(drawNode);
+    graph.nodes.forEach(drawText);
+  }
+
   // Restart simulation
   function restart() {
 
@@ -204,21 +220,6 @@ function vis(new_controls) {
         .on("drag", dragged)
         .on("end", dragended));
 
-    function ticked() {
-
-      // draw
-      context.clearRect(0, 0, width, height);
-      context.strokeStyle = controls['link_color'];
-      context.globalAlpha = controls['link_alpha'];
-      context.globalCompositeOperation = "destination-over";
-      graph.links.forEach(drawLink);
-      context.globalAlpha = 1.0
-      context.strokeStyle = controls['node_stroke_color'];
-      context.lineWidth = controls['node_stroke_width'] < 1e-3 ? 1e-9 : controls['node_stroke_width'] * controls['zoom'];
-      context.globalCompositeOperation = "source-over";
-      graph.nodes.forEach(drawNode);
-      graph.nodes.forEach(drawText);
-    }
 
     if (nodePositions || controls['freeze_nodes']) {
       simulation.alpha(0).restart();
@@ -226,6 +227,16 @@ function vis(new_controls) {
       simulation.alpha(1).restart();
     }
   }
+
+  function simulationSoftRestart(){
+    if (!controls['freeze_nodes']){
+      simulation.restart();
+    } else {
+      ticked();
+    }
+  }
+
+
 
 
   // Network functions
@@ -500,8 +511,10 @@ function vis(new_controls) {
 
   function inputtedCollision(v) {
     simulation.force("collide").radius(function(d) { return controls['node_collision'] * computeNodeRadii(d) });
-    simulation.alpha(1).restart();
-    if (controls['freeze_nodes']) controls['freeze_nodes'] = false;
+    if (!controls['freeze_nodes']) 
+      simulation.alpha(1)
+    
+    simulationSoftRestart();
   }
 
   function inputtedReheat(v) {
@@ -532,24 +545,24 @@ function vis(new_controls) {
       var b_ = bounceModulus(parseInt(referenceSwatch[g].slice(5, 7), 16) + db, 0, 255);
       activeSwatch[g] = '#' + toHex(r_) + toHex(g_) + toHex(b_);
     }
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedNodeStroke(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedLinkStroke(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedTextStroke(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedShowLabels(v) {
     selectedNodes = [];
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedShowSingletonNodes(v) {
@@ -564,7 +577,7 @@ function vis(new_controls) {
       })
     }
     restart();
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedNodeSizeByStrength(v) {
@@ -581,48 +594,50 @@ function vis(new_controls) {
       graph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
       negativeGraph.nodes.forEach(n => { n.size = valIfValid(findNode(masterGraph, n).size, 1) })
     }
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedLinkWidth(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedLinkAlpha(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedNodeSize(v) {
     if (controls['node_collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
-      simulation.alpha(1).restart();
-    } else {
-      simulation.restart();
+      if (!controls['freeze_nodes'])
+        simulation.alpha(1);
     }
+
+    simulationSoftRestart();
   }
 
   function inputtedNodeStrokeSize(v) {
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedNodeSizeExponent(v) {
     nodeSizeNorm = 1 / maxNodeSize ** (controls['node_size_variation'])
     if (controls['node_collision']) {
       simulation.force("collide").radius(function(d) { return computeNodeRadii(d) })
-      simulation.alpha(1).restart();
-    } else {
-      simulation.restart();
+      if (!controls['freeze_nodes'])
+        simulation.alpha(1);
     }
+
+    simulationSoftRestart();
   }
 
   function inputtedLinkWidthExponent(v) {
     linkWidthNorm = 1 / maxLinkWeight ** (controls['link_width_variation'])
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   function inputtedZoom(v) {
     zoomScaler = d3.scaleLinear().domain([0, width]).range([width * (1 - controls['zoom']), controls['zoom'] * width])
-    simulation.restart();
+    simulationSoftRestart();
   }
 
   var vMinPrev = 0;

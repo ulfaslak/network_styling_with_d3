@@ -36,3 +36,20 @@ function post_stop()
     };
     xhr.send();
 }
+
+window.addEventListener("unload", post_window_closed_stop);
+
+function post_window_closed_stop()
+{
+    let xhr = new XMLHttpRequest();
+    let url = window.location.href;
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            let response = xhr.responseText;
+            console.log(response);
+        }
+    };
+    xhr.send();
+}
