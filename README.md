@@ -1,4 +1,6 @@
-**If you are a Python user, check out [Netwulf](https://github.com/benmaier/netwulf/)!**
+**Update: If you are a Python user, check out [Netwulf](https://github.com/benmaier/netwulf/)!**
+
+-------
 
 [Web app](http://ulfaslak.com/works/network_styling_with_d3/index.html) for styling networks with buttons and sliders, powered by [d3-force](https://github.com/d3/d3-force).
 
